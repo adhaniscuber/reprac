@@ -36,6 +36,7 @@ type Model struct {
 	spinner    spinner.Model
 	results    map[string]*github.RepoStatus
 	loading    map[string]bool
+	expanded   map[string]bool
 	cursor     int
 	width      int
 	height     int
@@ -51,13 +52,14 @@ func New(cfgPath string, cfg *config.Config, gh *github.Client) Model {
 	sp.Style = styles.Faint
 
 	return Model{
-		cfg:     cfg,
-		cfgPath: cfgPath,
-		gh:      gh,
-		spinner: sp,
-		results: make(map[string]*github.RepoStatus),
-		loading: make(map[string]bool),
-		noAuth:  !gh.HasAuth(),
+		cfg:      cfg,
+		cfgPath:  cfgPath,
+		gh:       gh,
+		spinner:  sp,
+		results:  make(map[string]*github.RepoStatus),
+		loading:  make(map[string]bool),
+		expanded: make(map[string]bool),
+		noAuth:   !gh.HasAuth(),
 	}
 }
 
@@ -163,6 +165,20 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			return m, m.checkRepo(r.Owner, r.Repo)
 		}
 
+	case "enter", " ":
+		if len(repos) > 0 && m.cursor < len(repos) {
+			key := repoKey(repos[m.cursor].Owner, repos[m.cursor].Repo)
+			m.expanded[key] = !m.expanded[key]
+		}
+
+	case "E":
+		for _, r := range repos {
+			m.expanded[repoKey(r.Owner, r.Repo)] = true
+		}
+
+	case "C":
+		m.expanded = make(map[string]bool)
+
 	case "a":
 		m.showModal = true
 		m.modal = components.NewAddRepoModal(m.width, m.height)
@@ -191,7 +207,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "?":
 		// Toggle help via statusMsg
-		m.statusMsg = "r=refresh all  R=refresh row  a=add  d=delete  o=browser  j/k=move  q=quit"
+		m.statusMsg = "enter/space=expand  E=expand all  C=collapse all  r=refresh all  R=refresh row  a=add  d=delete  o=browser  j/k=move  q=quit"
 	}
 
 	return m, nil
@@ -286,22 +302,29 @@ func (m Model) View() string {
 
 	repos := m.cfg.Repos
 	// Determine scroll window
-	start, end := scrollWindow(m.cursor, len(repos), tableHeight)
+	start, end := scrollWindow(m.cursor, repos, m.expanded, m.results, tableHeight)
 
 	var rows []string
+	usedHeight := 0
 	for i := start; i < end && i < len(repos); i++ {
 		r := repos[i]
 		key := repoKey(r.Owner, r.Repo)
 		res := m.results[key]
 		isLoading := m.loading[key]
+		isExpanded := m.expanded[key]
 
-		row := components.RenderRow(i, i == m.cursor, key, r.Owner, r.Repo, r.Notes, res, isLoading)
+		row := components.RenderRow(i, i == m.cursor, key, r.Owner, r.Repo, r.Notes, res, isLoading, isExpanded, m.width)
 		rows = append(rows, row)
+		usedHeight += rowHeight(key, isExpanded, m.results)
+		if usedHeight >= tableHeight {
+			break
+		}
 	}
 
 	// Fill empty rows
-	for len(rows) < tableHeight {
+	for usedHeight < tableHeight {
 		rows = append(rows, lipgloss.NewStyle().Width(m.width).Render(""))
+		usedHeight++
 	}
 
 	sections = append(sections, strings.Join(rows, "\n"))
@@ -321,22 +344,56 @@ func (m Model) View() string {
 	return strings.Join(sections, "\n")
 }
 
-func scrollWindow(cursor, total, height int) (start, end int) {
-	if total <= height {
-		return 0, total
+// rowHeight returns how many terminal lines a repo row occupies.
+func rowHeight(key string, expanded bool, results map[string]*github.RepoStatus) int {
+	if !expanded {
+		return 1
 	}
+	res := results[key]
+	if res == nil || res.Status != github.StatusBehind || len(res.Commits) == 0 {
+		return 1
+	}
+	h := 1 + len(res.Commits) // header + commit lines
+	if res.CommitsAhead > len(res.Commits) {
+		h++ // "+N more commits" line
+	}
+	return h
+}
+
+func scrollWindow(cursor int, repos []config.RepoConfig, expanded map[string]bool, results map[string]*github.RepoStatus, height int) (start, end int) {
+	total := len(repos)
+	if total == 0 {
+		return 0, 0
+	}
+
+	// Try to center around cursor
+	// First pass: find a start such that cursor is roughly in the middle
 	start = cursor - height/2
 	if start < 0 {
 		start = 0
 	}
-	end = start + height
-	if end > total {
-		end = total
-		start = end - height
-		if start < 0 {
-			start = 0
+
+	// Forward pass from start: accumulate height until we fill tableHeight
+	used := 0
+	end = start
+	for end < total && used < height {
+		key := repoKey(repos[end].Owner, repos[end].Repo)
+		used += rowHeight(key, expanded[key], results)
+		end++
+	}
+
+	// If cursor is beyond end, shift start forward
+	if cursor >= end {
+		start = cursor
+		used = 0
+		end = start
+		for end < total && used < height {
+			key := repoKey(repos[end].Owner, repos[end].Repo)
+			used += rowHeight(key, expanded[key], results)
+			end++
 		}
 	}
+
 	return start, end
 }
 

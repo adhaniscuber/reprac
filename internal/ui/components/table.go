@@ -50,6 +50,8 @@ func RenderRow(
 	owner, repo, notes string,
 	status *github.RepoStatus,
 	loading bool,
+	expanded bool,
+	termWidth int,
 ) string {
 	cells := makeRowCells(owner, repo, notes, status, loading)
 
@@ -60,13 +62,50 @@ func RenderRow(
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top, rendered...)
 
+	var rowStyle lipgloss.Style
 	if selected {
-		return styles.RowSelected.Render(row)
+		rowStyle = styles.RowSelected
+	} else if idx%2 == 0 {
+		rowStyle = styles.RowNormal
+	} else {
+		rowStyle = styles.RowAlt
 	}
-	if idx%2 == 0 {
-		return styles.RowNormal.Render(row)
+
+	header := rowStyle.Render(row)
+
+	// If not expanded or no commit data, return just the header
+	if !expanded || status == nil || status.Status != github.StatusBehind || len(status.Commits) == 0 {
+		return header
 	}
-	return styles.RowAlt.Render(row)
+
+	// Build commit lines
+	shaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#5eacd3")).Faint(true)
+	msgStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#c0c0c0")).Faint(true)
+	indentStyle := rowStyle.Copy().Bold(false)
+
+	maxMsgLen := termWidth - 14 // 2 indent + 7 sha + 3 gap + buffer
+	if maxMsgLen < 10 {
+		maxMsgLen = 10
+	}
+
+	lines := []string{header}
+	for _, c := range status.Commits {
+		line := indentStyle.Render(
+			"  " + shaStyle.Render(c.SHA) + "  " + msgStyle.Render(truncate(c.Message, maxMsgLen)),
+		)
+		lines = append(lines, line)
+	}
+
+	// "+N more commits" if needed
+	if status.CommitsAhead > len(status.Commits) {
+		more := status.CommitsAhead - len(status.Commits)
+		moreLine := indentStyle.Render(
+			"  " + styles.Faint.Render(fmt.Sprintf("+%d more commits", more)),
+		)
+		lines = append(lines, moreLine)
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func makeRowCells(owner, repo, notes string, s *github.RepoStatus, loading bool) []string {
@@ -207,11 +246,12 @@ func RenderFooter(width int, showModal bool) string {
 		}
 	} else {
 		hints = []string{
+			styles.KeyHint("enter", "expand"),
+			styles.KeyHint("E/C", "expand/collapse all"),
 			styles.KeyHint("r", "refresh all"),
-			styles.KeyHint("R", "refresh row"),
-			styles.KeyHint("a", "add repo"),
+			styles.KeyHint("a", "add"),
 			styles.KeyHint("d", "delete"),
-			styles.KeyHint("o", "open browser"),
+			styles.KeyHint("o", "browser"),
 			styles.KeyHint("q", "quit"),
 		}
 	}

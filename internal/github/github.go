@@ -11,14 +11,21 @@ import (
 	"time"
 )
 
+// CommitInfo holds short info about a single commit.
+type CommitInfo struct {
+	SHA     string // 7-char short SHA
+	Message string // first line of commit message
+}
+
 // RepoStatus holds the computed deploy status for a repo.
 type RepoStatus struct {
 	Owner        string
 	Repo         string
 	Branch       string
-	TagName      string    // latest tag or release name
-	RefType      string    // "release" or "tag"
-	CommitsAhead int       // commits on main since last tag/release
+	TagName      string       // latest tag or release name
+	RefType      string       // "release" or "tag"
+	CommitsAhead int          // commits on main since last tag/release
+	Commits      []CommitInfo // up to 5 most recent, newest first
 	Status       Status
 	ErrorMsg     string
 	LastChecked  time.Time
@@ -148,7 +155,7 @@ func (c *Client) CheckRepo(ctx context.Context, owner, repo string) RepoStatus {
 	result.RefType = refType
 
 	// 3. Compare ref..branch
-	ahead, err := c.compareCommits(ctx, owner, repo, refSHA, branch)
+	ahead, commits, err := c.compareCommits(ctx, owner, repo, refSHA, branch)
 	if err != nil {
 		result.Status = StatusError
 		result.ErrorMsg = shortErr(err)
@@ -156,6 +163,7 @@ func (c *Client) CheckRepo(ctx context.Context, owner, repo string) RepoStatus {
 	}
 
 	result.CommitsAhead = ahead
+	result.Commits = commits
 	if ahead > 0 {
 		result.Status = StatusBehind
 	} else {
@@ -241,15 +249,46 @@ func (c *Client) resolveTagSHA(ctx context.Context, owner, repo, tag string) (st
 	return ref.Object.SHA, nil
 }
 
-func (c *Client) compareCommits(ctx context.Context, owner, repo, base, head string) (int, error) {
+func (c *Client) compareCommits(ctx context.Context, owner, repo, base, head string) (int, []CommitInfo, error) {
 	var cmp struct {
 		AheadBy int `json:"ahead_by"`
+		Commits []struct {
+			SHA    string `json:"sha"`
+			Commit struct {
+				Message string `json:"message"`
+			} `json:"commit"`
+		} `json:"commits"`
 	}
 	path := fmt.Sprintf("/repos/%s/%s/compare/%s...%s", owner, repo, base, head)
 	if err := c.get(ctx, path, &cmp); err != nil {
-		return 0, err
+		return 0, nil, err
 	}
-	return cmp.AheadBy, nil
+
+	// Take up to 5 most recent commits (API returns oldest first, so take from end)
+	const maxCommits = 5
+	all := cmp.Commits
+	start := 0
+	if len(all) > maxCommits {
+		start = len(all) - maxCommits
+	}
+	recent := all[start:]
+
+	// Reverse so newest is first
+	commits := make([]CommitInfo, len(recent))
+	for i, c := range recent {
+		sha := c.SHA
+		if len(sha) > 7 {
+			sha = sha[:7]
+		}
+		// Only first line of commit message
+		msg := c.Commit.Message
+		if idx := strings.Index(msg, "\n"); idx != -1 {
+			msg = msg[:idx]
+		}
+		commits[len(recent)-1-i] = CommitInfo{SHA: sha, Message: msg}
+	}
+
+	return cmp.AheadBy, commits, nil
 }
 
 func shortErr(err error) string {
