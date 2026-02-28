@@ -42,7 +42,7 @@ brews:
   - name: reprac
     repository:
       owner: adhaniscuber
-      name: tap
+      name: homebrew-tap
       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
     homepage: "https://github.com/adhaniscuber/reprac"
     description: "Track unreleased changes across your repos — never forget to deploy again."

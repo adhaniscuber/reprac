@@ -113,7 +113,7 @@ reprac version
 
 | Icon | Meaning |
 |---|---|
-| 🚀 `DEPLOY` | Has unreleased commits — needs deploy |
+| `▲ need deploy` | Has unreleased commits — needs deploy |
 | `✓ up to date` | All commits are tagged/released |
 | `◈ no release` | Repo has no tags or releases yet |
 | `✗ error` | Failed to fetch (private repo, typo, etc.) |

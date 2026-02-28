@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/charmbracelet/lipgloss"
 	"github.com/adhaniscuber/reprac/internal/github"
 	"github.com/adhaniscuber/reprac/internal/ui/styles"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // Column definitions
@@ -86,7 +86,7 @@ func makeRowCells(owner, repo, notes string, s *github.RepoStatus, loading bool)
 	var statusCell string
 	switch s.Status {
 	case github.StatusBehind:
-		statusCell = styles.BadgeDeploy.Render("🚀 DEPLOY")
+		statusCell = styles.BadgeDeploy.Render("▲ need deploy")
 	case github.StatusClean:
 		statusCell = styles.BadgeClean.Render("✓ up to date")
 	case github.StatusNoRelease:

@@ -63,11 +63,19 @@ func Save(path string, cfg *Config) error {
 
 // InitExample creates a sample config file.
 func InitExample(path string) error {
-	example := Config{
-		Repos: []RepoConfig{
-			{Owner: "your-org", Repo: "your-app", Notes: "Production app"},
-			{Owner: "your-org", Repo: "your-api", Notes: "Backend API"},
-		},
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return fmt.Errorf("creating config dir: %w", err)
 	}
-	return Save(path, &example)
+
+	content := `# reprac config — list of repos to track
+# Each entry must have owner and repo. notes is optional.
+repos:
+  - owner: your-org
+    repo: your-app
+    notes: "Production app"
+  - owner: your-org
+    repo: your-api
+    notes: "Backend API"
+`
+	return os.WriteFile(path, []byte(content), 0644)
 }
