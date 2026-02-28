@@ -13,8 +13,9 @@ import (
 
 // CommitInfo holds short info about a single commit.
 type CommitInfo struct {
-	SHA     string // 7-char short SHA
-	Message string // first line of commit message
+	SHA     string    // 7-char short SHA
+	Message string    // first line of commit message
+	Date    time.Time // author date
 }
 
 // RepoStatus holds the computed deploy status for a repo.
@@ -256,6 +257,9 @@ func (c *Client) compareCommits(ctx context.Context, owner, repo, base, head str
 			SHA    string `json:"sha"`
 			Commit struct {
 				Message string `json:"message"`
+				Author  struct {
+					Date time.Time `json:"date"`
+				} `json:"author"`
 			} `json:"commit"`
 		} `json:"commits"`
 	}
@@ -285,7 +289,7 @@ func (c *Client) compareCommits(ctx context.Context, owner, repo, base, head str
 		if idx := strings.Index(msg, "\n"); idx != -1 {
 			msg = msg[:idx]
 		}
-		commits[len(recent)-1-i] = CommitInfo{SHA: sha, Message: msg}
+		commits[len(recent)-1-i] = CommitInfo{SHA: sha, Message: msg, Date: c.Commit.Author.Date}
 	}
 
 	return cmp.AheadBy, commits, nil

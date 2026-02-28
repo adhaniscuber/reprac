@@ -81,17 +81,23 @@ func RenderRow(
 	// Build commit lines
 	shaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#5eacd3")).Faint(true)
 	msgStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#c0c0c0")).Faint(true)
+	dateStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")).Faint(true)
 	indentStyle := rowStyle.Copy().Bold(false)
 
-	maxMsgLen := termWidth - 14 // 2 indent + 7 sha + 3 gap + buffer
+	const dateLen = 18 // "15:04:05 02-Jan-06"
+	maxMsgLen := termWidth - 14 - dateLen - 2
 	if maxMsgLen < 10 {
 		maxMsgLen = 10
 	}
 
 	lines := []string{header}
 	for _, c := range status.Commits {
+		dateStr := ""
+		if !c.Date.IsZero() {
+			dateStr = c.Date.Local().Format("15:04:05 02-Jan-06")
+		}
 		line := indentStyle.Render(
-			"  " + shaStyle.Render(c.SHA) + "  " + msgStyle.Render(truncate(c.Message, maxMsgLen)),
+			"  " + dateStyle.Render(dateStr) + "  " + shaStyle.Render(c.SHA) + "  " + msgStyle.Render(truncate(c.Message, maxMsgLen)),
 		)
 		lines = append(lines, line)
 	}
