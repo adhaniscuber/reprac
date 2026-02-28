@@ -1,0 +1,13 @@
+# deploy-tracker configuration
+# List repositories you want to track for unreleased changes.
+# The tool checks if there are commits on the default branch
+# since the latest release or tag.
+
+repos:
+  - owner: adhaniscuber
+    repo: reprac
+    notes: "Optional description"
+  # Add more repos:
+  # - owner: another-org
+  #   repo: some-service
+  #   notes: "Optional description"

@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find /Users/cyuber/project/deploy-tracker -type f \\\\\\( -name \"*.go\" -o -name \"*.mod\" -o -name \"Makefile\" -o -name \"*.md\" \\\\\\) -exec sed -i '' 's/deploy-tracker/reprac/g' {} +)",
+      "Bash(go build -o bin/reprac .)",
+      "Bash(./bin/reprac version)",
+      "Bash(find /Users/cyuber/project/deploy-tracker -type f \\\\\\( -name \"*.go\" -o -name \"*.mod\" -o -name \"Makefile\" -o -name \"*.md\" \\\\\\) -exec sed -i '' 's|github.com/wirya/reprac|github.com/adhaniscuber/reprac|g' {} +)",
+      "Bash(chmod +x /Users/cyuber/project/deploy-tracker/install.sh)",
+      "Bash(gh auth status)",
+      "Bash(ls -la \"/Users/cyuber/project/deploy-tracker/{cmd,internal\")"
+    ]
+  }
+}

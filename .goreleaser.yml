@@ -1,0 +1,53 @@
+version: 2
+
+project_name: reprac
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+    binary: reprac
+
+archives:
+  - format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
+
+checksum:
+  name_template: "checksums.txt"
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+
+brews:
+  - name: reprac
+    repository:
+      owner: adhaniscuber
+      name: tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    homepage: "https://github.com/adhaniscuber/reprac"
+    description: "Track unreleased changes across your repos — never forget to deploy again."
+    license: "MIT"
+    install: |
+      bin.install "reprac"
+    test: |
+      system "#{bin}/reprac", "version"
