@@ -1,5 +1,5 @@
 BINARY := reprac
-VERSION := 0.1.0
+VERSION := 0.1.2
 BUILD_FLAGS := -ldflags="-s -w -X main.version=$(VERSION)"
 
 .PHONY: all build install run tidy clean

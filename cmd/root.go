@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/spf13/cobra"
 	"github.com/adhaniscuber/reprac/internal/config"
 	"github.com/adhaniscuber/reprac/internal/github"
 	"github.com/adhaniscuber/reprac/internal/ui"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/spf13/cobra"
 )
 
 var cfgPath string
@@ -68,7 +68,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("reprac v0.1.0")
+		fmt.Println("reprac v0.1.2")
 	},
 }
 
