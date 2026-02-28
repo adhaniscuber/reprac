@@ -27,13 +27,21 @@ var (
 		Foreground(ColorText)
 
 	Header = lipgloss.NewStyle().
-		Bold(true).
-		Foreground(ColorPrimary).
 		Background(ColorBgAlt).
-		Padding(0, 2).
-		BorderStyle(lipgloss.NormalBorder()).
+		Padding(1, 3).
+		BorderStyle(lipgloss.ThickBorder()).
 		BorderBottom(true).
-		BorderForeground(ColorSubtle)
+		BorderForeground(ColorPrimary)
+
+	HeaderTitle = lipgloss.NewStyle().
+			Bold(true).
+			Foreground(ColorPrimary).
+			Background(ColorBgAlt)
+
+	HeaderSub = lipgloss.NewStyle().
+			Foreground(ColorText).
+			Background(ColorBgAlt).
+			Faint(true)
 
 	Footer = lipgloss.NewStyle().
 		Foreground(ColorGray).

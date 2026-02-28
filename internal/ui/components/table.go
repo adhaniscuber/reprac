@@ -71,24 +71,35 @@ func RenderRow(
 		rowStyle = styles.RowAlt
 	}
 
-	header := rowStyle.Render(row)
+	header := rowStyle.Width(termWidth).Render(row)
 
 	// If not expanded or no commit data, return just the header
 	if !expanded || status == nil || status.Status != github.StatusBehind || len(status.Commits) == 0 {
 		return header
 	}
 
-	// Build commit lines
-	shaStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#5eacd3")).Faint(true)
-	msgStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#c0c0c0")).Faint(true)
-	dateStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#888888")).Faint(true)
+	// Fixed column widths for alignment
+	const (
+		indent  = 4  // leading spaces
+		dateW   = 18 // "15:04:05 02-Jan-06"
+		shaW    = 7  // short SHA
+		colGap  = 3  // gap between columns
+	)
+
+	shaStyle  := lipgloss.NewStyle().Foreground(lipgloss.Color("#5eacd3")).Width(shaW)
+	dateStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#777777")).Width(dateW)
+	msgStyle  := lipgloss.NewStyle().Foreground(lipgloss.Color("#aaaaaa"))
+	moreStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#555555")).Italic(true)
 	indentStyle := rowStyle.Copy().Bold(false)
 
-	const dateLen = 18 // "15:04:05 02-Jan-06"
-	maxMsgLen := termWidth - 14 - dateLen - 2
+	fixedPrefix := indent + dateW + colGap + shaW + colGap
+	maxMsgLen := termWidth - fixedPrefix - 2
 	if maxMsgLen < 10 {
 		maxMsgLen = 10
 	}
+
+	pad := strings.Repeat(" ", indent)
+	gap := strings.Repeat(" ", colGap)
 
 	lines := []string{header}
 	for _, c := range status.Commits {
@@ -96,8 +107,13 @@ func RenderRow(
 		if !c.Date.IsZero() {
 			dateStr = c.Date.Local().Format("15:04:05 02-Jan-06")
 		}
-		line := indentStyle.Render(
-			"  " + dateStyle.Render(dateStr) + "  " + shaStyle.Render(c.SHA) + "  " + msgStyle.Render(truncate(c.Message, maxMsgLen)),
+		line := indentStyle.Width(termWidth).Render(
+			pad +
+				dateStyle.Render(dateStr) +
+				gap +
+				shaStyle.Render(c.SHA) +
+				gap +
+				msgStyle.Render(truncate(c.Message, maxMsgLen)),
 		)
 		lines = append(lines, line)
 	}
@@ -105,8 +121,8 @@ func RenderRow(
 	// "+N more commits" if needed
 	if status.CommitsAhead > len(status.Commits) {
 		more := status.CommitsAhead - len(status.Commits)
-		moreLine := indentStyle.Render(
-			"  " + styles.Faint.Render(fmt.Sprintf("+%d more commits", more)),
+		moreLine := indentStyle.Width(termWidth).Render(
+			pad + moreStyle.Render(fmt.Sprintf("+ %d more commits...", more)),
 		)
 		lines = append(lines, moreLine)
 	}

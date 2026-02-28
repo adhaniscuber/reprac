@@ -7,13 +7,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/spinner"
-	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 	"github.com/adhaniscuber/reprac/internal/config"
 	"github.com/adhaniscuber/reprac/internal/github"
 	"github.com/adhaniscuber/reprac/internal/ui/components"
 	"github.com/adhaniscuber/reprac/internal/ui/styles"
+	"github.com/charmbracelet/bubbles/spinner"
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 // ── Messages ──────────────────────────────────────────────────────────────────
@@ -30,20 +30,20 @@ type repoLoadingMsg struct {
 // ── Model ─────────────────────────────────────────────────────────────────────
 
 type Model struct {
-	cfg        *config.Config
-	cfgPath    string
-	gh         *github.Client
-	spinner    spinner.Model
-	results    map[string]*github.RepoStatus
-	loading    map[string]bool
-	expanded   map[string]bool
-	cursor     int
-	width      int
-	height     int
-	showModal  bool
-	modal      components.AddRepoModal
-	statusMsg  string
-	noAuth     bool
+	cfg       *config.Config
+	cfgPath   string
+	gh        *github.Client
+	spinner   spinner.Model
+	results   map[string]*github.RepoStatus
+	loading   map[string]bool
+	expanded  map[string]bool
+	cursor    int
+	width     int
+	height    int
+	showModal bool
+	modal     components.AddRepoModal
+	statusMsg string
+	noAuth    bool
 }
 
 func New(cfgPath string, cfg *config.Config, gh *github.Client) Model {
@@ -260,49 +260,62 @@ func (m Model) View() string {
 		return m.modal.View()
 	}
 
-	var sections []string
+	const leftWidth = 52
 
-	// Header
-	title := styles.Header.Width(m.width).Render(
-		"  🚀  reprac  " + styles.Faint.Render("— track unreleased changes"),
+	// ── Left panel: ASCII art + tagline ───────────────────────────────────
+	asciiArt := styles.HeaderTitle.Render(
+		"    ________  ____  _________  _____\n" +
+			"   / ___/ _ \\/ __ \\/ ___/ __ `/ ___/\n" +
+			"  / /  /  __/ /_/ / /  / /_/ / /__  \n" +
+			" /_/   \\___/ ____/_/   \\__,_/\\___/  \n" +
+			"          /_/",
 	)
-	sections = append(sections, title)
+	leftContent := "\n" + asciiArt + "\n\n" +
+		styles.HeaderSub.Render("  track unreleased changes") + "\n"
+	leftPanel := components.RenderTitledPanel("", leftContent, leftWidth, 9, styles.ColorPrimary)
 
-	// Summary bar
+	// ── Right panel: repo overview ─────────────────────────────────────────
+	rightWidth := m.width - leftWidth
 	total := len(m.cfg.Repos)
-	pending := 0
+	pending, clean, noRelease := 0, 0, 0
 	loading := len(m.loading)
 	for _, r := range m.cfg.Repos {
 		key := repoKey(r.Owner, r.Repo)
-		if res, ok := m.results[key]; ok && res.Status == github.StatusBehind {
-			pending++
+		if res, ok := m.results[key]; ok {
+			switch res.Status {
+			case github.StatusBehind:
+				pending++
+			case github.StatusClean:
+				clean++
+			case github.StatusNoRelease:
+				noRelease++
+			}
 		}
 	}
-	sections = append(sections, components.RenderSummary(total, pending, loading, m.width))
+	rightContent := buildOverview(total, pending, clean, noRelease, loading, m.noAuth)
+	rightPanel := components.RenderTitledPanel("overview", rightContent, rightWidth, 9, styles.ColorSubtle)
 
-	// Auth warning
-	if m.noAuth {
-		warn := lipgloss.NewStyle().
-			Foreground(styles.ColorYellow).
-			Background(lipgloss.Color("#2a2500")).
-			Padding(0, 2).
-			Width(m.width).
-			Render("⚠  No GitHub auth detected. Set GITHUB_TOKEN or run: gh auth login  (rate limit: 60 req/hr)")
-		sections = append(sections, warn)
+	topRow := lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, rightPanel)
+	topRowHeight := lipgloss.Height(topRow)
+
+	// ── Table panel ───────────────────────────────────────────────────────
+	footerHeight := 1
+	statusHeight := 1
+	tablePanelHeight := m.height - topRowHeight - footerHeight - statusHeight
+	if tablePanelHeight < 4 {
+		tablePanelHeight = 4
 	}
 
-	// Table header
-	sections = append(sections, components.RenderHeader(m.width))
-
-	// Table rows
-	tableHeight := m.height - lipgloss.Height(strings.Join(sections, "\n")) - 4 // -4 for footer+statusbar
-	if tableHeight < 1 {
-		tableHeight = 1
+	tableInner := m.width - 2 // panel left+right border
+	headerStr := components.RenderHeader(tableInner)
+	headerHeight := lipgloss.Height(headerStr)
+	dataHeight := tablePanelHeight - 2 - headerHeight // -2 for panel top+bottom border
+	if dataHeight < 1 {
+		dataHeight = 1
 	}
 
 	repos := m.cfg.Repos
-	// Determine scroll window
-	start, end := scrollWindow(m.cursor, repos, m.expanded, m.results, tableHeight)
+	start, end := scrollWindow(m.cursor, repos, m.expanded, m.results, dataHeight)
 
 	var rows []string
 	usedHeight := 0
@@ -313,35 +326,56 @@ func (m Model) View() string {
 		isLoading := m.loading[key]
 		isExpanded := m.expanded[key]
 
-		row := components.RenderRow(i, i == m.cursor, key, r.Owner, r.Repo, r.Notes, res, isLoading, isExpanded, m.width)
+		row := components.RenderRow(i, i == m.cursor, key, r.Owner, r.Repo, r.Notes, res, isLoading, isExpanded, tableInner)
 		rows = append(rows, row)
 		usedHeight += rowHeight(key, isExpanded, m.results)
-		if usedHeight >= tableHeight {
+		if usedHeight >= dataHeight {
 			break
 		}
 	}
-
-	// Fill empty rows
-	for usedHeight < tableHeight {
-		rows = append(rows, lipgloss.NewStyle().Width(m.width).Render(""))
+	for usedHeight < dataHeight {
+		rows = append(rows, strings.Repeat(" ", tableInner))
 		usedHeight++
 	}
 
-	sections = append(sections, strings.Join(rows, "\n"))
+	tableContent := headerStr + "\n" + strings.Join(rows, "\n")
+	tablePanel := components.RenderTitledPanel("repositories", tableContent, m.width, 0, styles.ColorSubtle)
 
-	// Status message bar
+	// ── Status bar ────────────────────────────────────────────────────────
 	var statusBar string
 	if m.statusMsg != "" {
 		statusBar = styles.Faint.Width(m.width).Render("  " + m.statusMsg)
 	} else {
 		statusBar = styles.Faint.Width(m.width).Render("")
 	}
-	sections = append(sections, statusBar)
 
-	// Footer
-	sections = append(sections, components.RenderFooter(m.width, false))
+	// ── Footer ────────────────────────────────────────────────────────────
+	footer := components.RenderFooter(m.width, false)
 
-	return strings.Join(sections, "\n")
+	return strings.Join([]string{topRow, tablePanel, statusBar, footer}, "\n")
+}
+
+func buildOverview(total, pending, clean, noRelease, loading int, noAuth bool) string {
+	var lines []string
+	lines = append(lines, "")
+	if loading > 0 {
+		lines = append(lines, styles.Faint.Render(fmt.Sprintf("  ⏳  checking %d...", loading)))
+	}
+	if pending > 0 {
+		lines = append(lines, styles.CommitsAhead.Render(fmt.Sprintf("  ▲  %d  need deploy", pending)))
+	}
+	if clean > 0 {
+		lines = append(lines, styles.BadgeClean.Render(fmt.Sprintf("  ✓  %d  up to date", clean)))
+	}
+	if noRelease > 0 {
+		lines = append(lines, styles.BadgeNoRelease.Render(fmt.Sprintf("  ◈  %d  no release", noRelease)))
+	}
+	lines = append(lines, styles.Faint.Render(fmt.Sprintf("  ·  %d  repos", total)))
+	if noAuth {
+		lines = append(lines, "")
+		lines = append(lines, styles.Faint.Render("  ⚠  no auth · set GITHUB_TOKEN"))
+	}
+	return strings.Join(lines, "\n")
 }
 
 // rowHeight returns how many terminal lines a repo row occupies.
