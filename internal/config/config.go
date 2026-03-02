@@ -22,11 +22,13 @@ type Config struct {
 
 // DefaultPath returns the default config file path (~/.config/reprac/repos.yaml).
 func DefaultPath() string {
-	cfgDir, err := os.UserConfigDir()
-	if err != nil {
-		cfgDir = os.Getenv("HOME")
+	home := os.Getenv("HOME")
+	if home == "" {
+		if h, err := os.UserHomeDir(); err == nil {
+			home = h
+		}
 	}
-	return filepath.Join(cfgDir, "reprac", "repos.yaml")
+	return filepath.Join(home, ".config", "reprac", "repos.yaml")
 }
 
 // Load reads and parses a config YAML file.
@@ -69,10 +71,20 @@ func InitExample(path string) error {
 
 	content := `# reprac config — list of repos to track
 # Each entry must have owner and repo. notes is optional.
+#
+# Example:
+# repos:
+#   - owner: your-org
+#     repo: your-app
+#     notes: "Production frontend"
+#   - owner: your-org
+#     repo: your-api
+#     notes: "Backend API"
+
 repos:
   - owner: your-org
     repo: your-app
-    notes: "Production app"
+    notes: "Production frontend"
   - owner: your-org
     repo: your-api
     notes: "Backend API"
