@@ -2,167 +2,137 @@ package styles
 
 import "github.com/charmbracelet/lipgloss"
 
-// Palette
+// ── Palette ───────────────────────────────────────────────────────────────────
 var (
-	ColorPrimary   = lipgloss.Color("#CBA6F7") // mauve
-	ColorSecondary = lipgloss.Color("#89B4FA") // blue
-	ColorGreen     = lipgloss.Color("#A6E3A1") // green
-	ColorYellow    = lipgloss.Color("#F9E2AF") // yellow
-	ColorRed       = lipgloss.Color("#F38BA8") // red
-	ColorCyan      = lipgloss.Color("#89DCEB") // sky
-	ColorGray      = lipgloss.Color("#6C7086") // overlay0
-	ColorSubtle    = lipgloss.Color("#45475A") // surface1
-	ColorBg        = lipgloss.Color("#1E1E2E") // base
-	ColorBgAlt     = lipgloss.Color("#181825") // mantle
-	ColorSurface   = lipgloss.Color("#313244") // surface0
-	ColorText      = lipgloss.Color("#CDD6F4") // text
-	ColorMuted     = lipgloss.Color("#585B70") // surface2
-)
+	ColorAccent  = lipgloss.Color("205") // hot pink — primary accent
+	ColorBlue    = lipgloss.Color("111") // blue
+	ColorGreen   = lipgloss.Color("114") // green
+	ColorAmber   = lipgloss.Color("222") // amber / yellow
+	ColorRed     = lipgloss.Color("204") // red
+	ColorCyan    = lipgloss.Color("51")  // bright cyan
+	ColorMuted   = lipgloss.Color("60")  // muted gray — footer, faint text
+	ColorSubtle  = lipgloss.Color("238") // surface subtle — borders, dividers
+	ColorDim     = lipgloss.Color("241") // dim — timestamps
+	ColorBg      = lipgloss.Color("234") // base background
+	ColorBgAlt   = lipgloss.Color("233") // mantle — header, footer bg
+	ColorSurface = lipgloss.Color("236") // surface — selected row bg
+	ColorText    = lipgloss.Color("252") // main text
 
-// ── Layout ────────────────────────────────────────────────────────────────────
+	// ── Layout ────────────────────────────────────────────────────────────────
 
-var (
-	App = lipgloss.NewStyle().
-		Background(ColorBg).
-		Foreground(ColorText)
+	StyleApp = lipgloss.NewStyle().
+			Background(ColorBg).
+			Foreground(ColorText)
 
-	Header = lipgloss.NewStyle().
-		Background(ColorBgAlt).
-		Padding(1, 3).
-		BorderStyle(lipgloss.ThickBorder()).
-		BorderBottom(true).
-		BorderForeground(ColorPrimary)
-
-	HeaderTitle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorPrimary).
-			Background(ColorBgAlt)
-
-	HeaderSub = lipgloss.NewStyle().
-			Foreground(ColorText).
+	StyleHeader = lipgloss.NewStyle().
 			Background(ColorBgAlt).
+			Padding(1, 3).
+			BorderStyle(lipgloss.ThickBorder()).
+			BorderBottom(true).
+			BorderForeground(ColorAccent)
+
+	StyleHeaderTitle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(ColorAccent)
+
+	StyleHeaderSub = lipgloss.NewStyle().
+			Foreground(ColorText).
 			Faint(true)
 
-	Footer = lipgloss.NewStyle().
-		Foreground(ColorGray).
-		Background(ColorBgAlt).
-		Padding(0, 1)
+	StyleFooter = lipgloss.NewStyle().
+			Foreground(ColorMuted).
+			Background(ColorBgAlt).
+			Padding(0, 1)
 
-	SummaryBar = lipgloss.NewStyle().
-			Foreground(ColorText).
-			Background(ColorSurface).
-			Padding(0, 2)
+	StyleSummaryBar = lipgloss.NewStyle().
+				Foreground(ColorText).
+				Background(ColorSurface).
+				Padding(0, 2)
 
-	SummaryBarPending = lipgloss.NewStyle().
-				Foreground(ColorYellow).
+	StyleSummaryBarPending = lipgloss.NewStyle().
+				Foreground(ColorAmber).
 				Background(ColorSurface).
 				Bold(true).
 				Padding(0, 2)
-)
 
-// ── Table ─────────────────────────────────────────────────────────────────────
+	// ── Table ─────────────────────────────────────────────────────────────────
 
-var (
-	TableHeader = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorSecondary).
+	StyleTableHeader = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(ColorBlue).
+				Padding(0, 1).
+				BorderStyle(lipgloss.NormalBorder()).
+				BorderBottom(true).
+				BorderForeground(ColorSubtle)
+
+	StyleRowSelected = lipgloss.NewStyle().
+				Background(ColorSurface).
+				Foreground(ColorText)
+
+	StyleRowNormal = lipgloss.NewStyle().
+			Foreground(ColorText)
+
+	StyleRowAlt = lipgloss.NewStyle().
+			Foreground(ColorText)
+
+	StyleCell = lipgloss.NewStyle().Padding(0, 1)
+
+	// ── Badges ────────────────────────────────────────────────────────────────
+
+	StyleBadgeDeploy = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(ColorBg).
+				Background(ColorAmber).
+				Padding(0, 1)
+
+	StyleBadgeClean     = lipgloss.NewStyle().Foreground(ColorGreen)
+	StyleBadgeNoRelease = lipgloss.NewStyle().Foreground(ColorCyan)
+	StyleBadgeError     = lipgloss.NewStyle().Foreground(ColorRed)
+	StyleBadgeLoading   = lipgloss.NewStyle().Foreground(ColorMuted)
+
+	// ── Text ──────────────────────────────────────────────────────────────────
+
+	StyleBold        = lipgloss.NewStyle().Bold(true)
+	StyleFaint       = lipgloss.NewStyle().Foreground(ColorMuted)
+	StyleSubtle      = lipgloss.NewStyle().Foreground(ColorSubtle)
+	StyleRepoName    = lipgloss.NewStyle().Bold(true).Foreground(ColorBlue)
+	StyleCommitsAhead = lipgloss.NewStyle().Bold(true).Foreground(ColorAmber)
+	StyleBranchName  = lipgloss.NewStyle().Foreground(ColorCyan)
+	StyleTagName     = lipgloss.NewStyle().Foreground(ColorAccent)
+	StyleNotes       = lipgloss.NewStyle().Foreground(ColorMuted).Italic(true)
+	StyleTimestamp   = lipgloss.NewStyle().Foreground(ColorDim)
+
+	// ── Commit expand rows ────────────────────────────────────────────────────
+
+	StyleCommitSHA  = lipgloss.NewStyle().Foreground(lipgloss.Color("74"))  // steel blue
+	StyleCommitDate = lipgloss.NewStyle().Foreground(lipgloss.Color("243")) // gray
+	StyleCommitMsg  = lipgloss.NewStyle().Foreground(lipgloss.Color("247")) // light gray
+	StyleCommitMore = lipgloss.NewStyle().Foreground(lipgloss.Color("240")).Italic(true)
+
+	// ── Modal ─────────────────────────────────────────────────────────────────
+
+	StyleModal = lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(ColorAccent).
 			Background(ColorBgAlt).
-			Padding(0, 1).
-			BorderStyle(lipgloss.NormalBorder()).
-			BorderBottom(true).
-			BorderForeground(ColorSubtle)
+			Padding(1, 2)
 
-	RowSelected = lipgloss.NewStyle().
-			Background(ColorSurface).
-			Foreground(ColorText)
+	StyleModalTitle = lipgloss.NewStyle().
+				Bold(true).
+				Foreground(ColorAccent).
+				MarginBottom(1)
 
-	RowNormal = lipgloss.NewStyle().
-			Foreground(ColorText)
+	StyleModalLabel = lipgloss.NewStyle().Foreground(ColorText)
 
-	RowAlt = lipgloss.NewStyle().
-		Foreground(ColorText).
-		Background(lipgloss.Color("#1a1a2e"))
-
-	Cell = lipgloss.NewStyle().Padding(0, 1)
-)
-
-// ── Status Badges ─────────────────────────────────────────────────────────────
-
-var (
-	BadgeDeploy = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorBg).
-			Background(ColorYellow).
-			Padding(0, 1)
-
-	BadgeClean = lipgloss.NewStyle().
-			Foreground(ColorGreen)
-
-	BadgeNoRelease = lipgloss.NewStyle().
-			Foreground(ColorCyan)
-
-	BadgeError = lipgloss.NewStyle().
-			Foreground(ColorRed)
-
-	BadgeLoading = lipgloss.NewStyle().
-			Foreground(ColorGray)
-)
-
-// ── Text Helpers ──────────────────────────────────────────────────────────────
-
-var (
-	Bold = lipgloss.NewStyle().Bold(true)
-
-	Faint = lipgloss.NewStyle().Foreground(ColorGray)
-
-	RepoName = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorSecondary)
-
-	CommitsAhead = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorYellow)
-
-	BranchName = lipgloss.NewStyle().
-			Foreground(ColorCyan)
-
-	TagName = lipgloss.NewStyle().
-		Foreground(ColorPrimary)
-
-	Notes = lipgloss.NewStyle().
-		Foreground(ColorGray).
-		Italic(true)
-
-	Timestamp = lipgloss.NewStyle().
-			Foreground(ColorMuted)
-)
-
-// ── Modal / Overlay ───────────────────────────────────────────────────────────
-
-var (
-	Modal = lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(ColorPrimary).
-		Background(ColorBgAlt).
-		Padding(1, 2)
-
-	ModalTitle = lipgloss.NewStyle().
-			Bold(true).
-			Foreground(ColorPrimary).
-			MarginBottom(1)
-
-	ModalLabel = lipgloss.NewStyle().
-			Foreground(ColorText)
-
-	InputStyle = lipgloss.NewStyle().
+	StyleInput = lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(ColorSubtle).
 			Padding(0, 1)
 
-	InputFocused = lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(ColorPrimary).
-			Padding(0, 1)
+	StyleInputFocused = lipgloss.NewStyle().
+				Border(lipgloss.RoundedBorder()).
+				BorderForeground(ColorAccent).
+				Padding(0, 1)
 )
 
 // ── Key Hints ─────────────────────────────────────────────────────────────────
@@ -170,11 +140,11 @@ var (
 func KeyHint(key, desc string) string {
 	k := lipgloss.NewStyle().
 		Foreground(ColorBg).
-		Background(ColorGray).
+		Background(ColorMuted).
 		Padding(0, 1).
 		Render(key)
 	d := lipgloss.NewStyle().
-		Foreground(ColorGray).
+		Foreground(ColorMuted).
 		Render(" " + desc + "  ")
 	return k + d
 }

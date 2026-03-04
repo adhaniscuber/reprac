@@ -6,11 +6,22 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-// RenderTitledPanel renders a Surge-style bordered panel.
+// RenderTitledPanel renders a bordered panel.
 // Title is right-aligned on the top border (empty = no title label).
 // innerHeight = minimum inner content lines, 0 = auto height.
-func RenderTitledPanel(title, content string, width, innerHeight int, borderColor lipgloss.Color) string {
+// titleColor (optional) overrides the border color for the title label text.
+func RenderTitledPanel(title, content string, width, innerHeight int, borderColor lipgloss.Color, titleColor ...lipgloss.Color) string {
+	if width < 4 {
+		width = 4
+	}
 	bStyle := lipgloss.NewStyle().Foreground(borderColor)
+
+	tColor := borderColor
+	if len(titleColor) > 0 {
+		tColor = titleColor[0]
+	}
+	tStyle := lipgloss.NewStyle().Foreground(tColor)
+
 	inner := width - 2 // subtract left + right border chars
 
 	lines := strings.Split(content, "\n")
@@ -20,7 +31,7 @@ func RenderTitledPanel(title, content string, width, innerHeight int, borderColo
 		lines = append(lines, "")
 	}
 
-	// Top border: ╭──────────── Title ─╮  (title right-aligned, Surge style)
+	// Top border: ╭──────────── Title ─╮  (title right-aligned)
 	var top string
 	if title == "" {
 		top = bStyle.Render("╭" + strings.Repeat("─", inner) + "╮")
@@ -31,7 +42,7 @@ func RenderTitledPanel(title, content string, width, innerHeight int, borderColo
 		if dashes < 1 {
 			dashes = 1
 		}
-		top = bStyle.Render("╭" + strings.Repeat("─", dashes) + t + "─╮")
+		top = bStyle.Render("╭"+strings.Repeat("─", dashes)) + tStyle.Render(t) + bStyle.Render("─╮")
 	}
 
 	// Content lines: │ content <padding> │

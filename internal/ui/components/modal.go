@@ -3,10 +3,10 @@ package components
 import (
 	"strings"
 
+	"github.com/adhaniscuber/reprac/internal/ui/styles"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/adhaniscuber/reprac/internal/ui/styles"
 )
 
 // AddRepoResult is returned when the modal is submitted.
@@ -112,18 +112,18 @@ func (m AddRepoModal) View() string {
 	labels := []string{"Owner", "Repo", "Notes (optional)"}
 
 	var sb strings.Builder
-	sb.WriteString(styles.ModalTitle.Render("➕  Add Repository"))
+	sb.WriteString(styles.StyleModalTitle.Render("➕  Add Repository"))
 	sb.WriteString("\n\n")
 
 	for i, inp := range m.inputs {
-		label := styles.ModalLabel.Render(labels[i])
+		label := styles.StyleModalLabel.Render(labels[i])
 		sb.WriteString(label + "\n")
 
 		var inputBox string
 		if m.focused == i {
-			inputBox = styles.InputFocused.Width(38).Render(inp.View())
+			inputBox = styles.StyleInputFocused.Width(38).Render(inp.View())
 		} else {
-			inputBox = styles.InputStyle.Width(38).Render(inp.View())
+			inputBox = styles.StyleInput.Width(38).Render(inp.View())
 		}
 		sb.WriteString(inputBox + "\n\n")
 	}
@@ -134,7 +134,7 @@ func (m AddRepoModal) View() string {
 	hints := lipgloss.JoinHorizontal(lipgloss.Top, enterHint, tabHint, escHint)
 	sb.WriteString(hints)
 
-	dialog := styles.Modal.Render(sb.String())
+	dialog := styles.StyleModal.Render(sb.String())
 
 	// Centre the dialog
 	return lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, dialog,

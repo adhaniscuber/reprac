@@ -32,15 +32,20 @@ type TableRow struct {
 	Cells   []string
 }
 
-func RenderHeader(width int) string {
-	cells := make([]string, len(Columns))
-	for i, col := range Columns {
-		cells[i] = styles.TableHeader.
-			Width(col.Width).
-			Render(truncate(col.Title, col.Width-2))
+func RenderHeader(width int, firstCol int) string {
+	var cells []string
+	used := 0
+	for i := firstCol; i < len(Columns); i++ {
+		col := Columns[i]
+		cellW := col.Width + 2 // content + left/right padding
+		if used+cellW > width && len(cells) > 0 {
+			break
+		}
+		cells = append(cells, styles.StyleTableHeader.Width(col.Width).Render(truncate(col.Title, col.Width-2)))
+		used += cellW
 	}
 	row := lipgloss.JoinHorizontal(lipgloss.Top, cells...)
-	return styles.TableHeader.Width(width).Render(row)
+	return styles.StyleTableHeader.Width(width).Render(row)
 }
 
 func RenderRow(
@@ -52,23 +57,30 @@ func RenderRow(
 	loading bool,
 	expanded bool,
 	termWidth int,
+	firstCol int,
 ) string {
 	cells := makeRowCells(owner, repo, notes, status, loading)
 
-	rendered := make([]string, len(cells))
-	for i, cell := range cells {
-		rendered[i] = styles.Cell.Width(Columns[i].Width).Render(cell)
+	var rendered []string
+	used := 0
+	for i := firstCol; i < len(cells); i++ {
+		cellW := Columns[i].Width + 2
+		if used+cellW > termWidth && len(rendered) > 0 {
+			break
+		}
+		rendered = append(rendered, styles.StyleCell.Width(Columns[i].Width).Render(cells[i]))
+		used += cellW
 	}
 
 	row := lipgloss.JoinHorizontal(lipgloss.Top, rendered...)
 
 	var rowStyle lipgloss.Style
 	if selected {
-		rowStyle = styles.RowSelected
+		rowStyle = styles.StyleRowSelected
 	} else if idx%2 == 0 {
-		rowStyle = styles.RowNormal
+		rowStyle = styles.StyleRowNormal
 	} else {
-		rowStyle = styles.RowAlt
+		rowStyle = styles.StyleRowAlt
 	}
 
 	header := rowStyle.Width(termWidth).Render(row)
@@ -80,16 +92,16 @@ func RenderRow(
 
 	// Fixed column widths for alignment
 	const (
-		indent  = 4  // leading spaces
-		dateW   = 18 // "15:04:05 02-Jan-06"
-		shaW    = 7  // short SHA
-		colGap  = 3  // gap between columns
+		indent = 4  // leading spaces
+		dateW  = 18 // "15:04:05 02-Jan-06"
+		shaW   = 7  // short SHA
+		colGap = 3  // gap between columns
 	)
 
-	shaStyle  := lipgloss.NewStyle().Foreground(lipgloss.Color("#5eacd3")).Width(shaW)
-	dateStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#777777")).Width(dateW)
-	msgStyle  := lipgloss.NewStyle().Foreground(lipgloss.Color("#aaaaaa"))
-	moreStyle := lipgloss.NewStyle().Foreground(lipgloss.Color("#555555")).Italic(true)
+	shaStyle   := styles.StyleCommitSHA.Width(shaW)
+	dateStyle  := styles.StyleCommitDate.Width(dateW)
+	msgStyle   := styles.StyleCommitMsg
+	moreStyle  := styles.StyleCommitMore
 	indentStyle := rowStyle.Copy().Bold(false)
 
 	fixedPrefix := indent + dateW + colGap + shaW + colGap
@@ -133,13 +145,13 @@ func RenderRow(
 func makeRowCells(owner, repo, notes string, s *github.RepoStatus, loading bool) []string {
 	if loading || s == nil {
 		return []string{
-			styles.BadgeLoading.Render("⏳ loading..."),
-			styles.RepoName.Render(truncate(owner+"/"+repo, Columns[1].Width-2)),
-			styles.Faint.Render("—"),
-			styles.Faint.Render("—"),
-			styles.Faint.Render("—"),
-			styles.Notes.Render(truncate(notes, Columns[5].Width-2)),
-			styles.Faint.Render("—"),
+			styles.StyleBadgeLoading.Render("⏳ loading..."),
+			styles.StyleRepoName.Render(truncate(owner+"/"+repo, Columns[1].Width-2)),
+			styles.StyleFaint.Render("—"),
+			styles.StyleFaint.Render("—"),
+			styles.StyleFaint.Render("—"),
+			styles.StyleNotes.Render(truncate(notes, Columns[5].Width-2)),
+			styles.StyleFaint.Render("—"),
 		}
 	}
 
@@ -147,31 +159,31 @@ func makeRowCells(owner, repo, notes string, s *github.RepoStatus, loading bool)
 	var statusCell string
 	switch s.Status {
 	case github.StatusBehind:
-		statusCell = styles.BadgeDeploy.Render("▲ need deploy")
+		statusCell = styles.StyleBadgeDeploy.Render("▲ need deploy")
 	case github.StatusClean:
-		statusCell = styles.BadgeClean.Render("✓ up to date")
+		statusCell = styles.StyleBadgeClean.Render("✓ up to date")
 	case github.StatusNoRelease:
-		statusCell = styles.BadgeNoRelease.Render("◈ no release")
+		statusCell = styles.StyleBadgeNoRelease.Render("◈ no release")
 	case github.StatusError:
-		statusCell = styles.BadgeError.Render("✗ error")
+		statusCell = styles.StyleBadgeError.Render("✗ error")
 	default:
-		statusCell = styles.BadgeLoading.Render("? unknown")
+		statusCell = styles.StyleBadgeLoading.Render("? unknown")
 	}
 
 	// Repo cell
-	repoCell := styles.RepoName.Render(truncate(owner+"/"+repo, Columns[1].Width-2))
+	repoCell := styles.StyleRepoName.Render(truncate(owner+"/"+repo, Columns[1].Width-2))
 
 	// Branch
 	branch := s.Branch
 	if branch == "" {
 		branch = "main"
 	}
-	branchCell := styles.BranchName.Render(truncate(branch, Columns[2].Width-2))
+	branchCell := styles.StyleBranchName.Render(truncate(branch, Columns[2].Width-2))
 
 	// Tag/Release
 	var tagCell string
 	if s.TagName == "" {
-		tagCell = styles.Faint.Render("—")
+		tagCell = styles.StyleFaint.Render("—")
 	} else {
 		prefix := ""
 		if s.RefType == "release" {
@@ -179,31 +191,31 @@ func makeRowCells(owner, repo, notes string, s *github.RepoStatus, loading bool)
 		} else {
 			prefix = "⬢ "
 		}
-		tagCell = styles.TagName.Render(truncate(prefix+s.TagName, Columns[3].Width-2))
+		tagCell = styles.StyleTagName.Render(truncate(prefix+s.TagName, Columns[3].Width-2))
 	}
 
 	// Commits ahead
 	var commitsCell string
 	switch s.Status {
 	case github.StatusBehind:
-		commitsCell = styles.CommitsAhead.Render(fmt.Sprintf("+%d commit(s)", s.CommitsAhead))
+		commitsCell = styles.StyleCommitsAhead.Render(fmt.Sprintf("+%d commit(s)", s.CommitsAhead))
 	case github.StatusClean:
-		commitsCell = styles.BadgeClean.Render("0")
+		commitsCell = styles.StyleBadgeClean.Render("0")
 	case github.StatusError:
-		commitsCell = styles.BadgeError.Render(truncate(s.ErrorMsg, Columns[4].Width-2))
+		commitsCell = styles.StyleBadgeError.Render(truncate(s.ErrorMsg, Columns[4].Width-2))
 	default:
-		commitsCell = styles.Faint.Render("—")
+		commitsCell = styles.StyleFaint.Render("—")
 	}
 
 	// Notes
-	notesCell := styles.Notes.Render(truncate(notes, Columns[5].Width-2))
+	notesCell := styles.StyleNotes.Render(truncate(notes, Columns[5].Width-2))
 
 	// Last checked
 	var checkedCell string
 	if s.LastChecked.IsZero() {
-		checkedCell = styles.Faint.Render("—")
+		checkedCell = styles.StyleFaint.Render("—")
 	} else {
-		checkedCell = styles.Timestamp.Render(s.LastChecked.Local().Format("15:04:05"))
+		checkedCell = styles.StyleTimestamp.Render(s.LastChecked.Local().Format("15:04:05"))
 	}
 
 	return []string{statusCell, repoCell, branchCell, tagCell, commitsCell, notesCell, checkedCell}
@@ -234,31 +246,31 @@ func RenderSummary(total, pending, loading int, width int) string {
 	var parts []string
 
 	if loading > 0 {
-		parts = append(parts, styles.Faint.Render(fmt.Sprintf("⏳ checking %d...", loading)))
+		parts = append(parts, styles.StyleFaint.Render(fmt.Sprintf("⏳ checking %d...", loading)))
 	}
 
 	if pending > 0 {
 		parts = append(parts,
-			styles.CommitsAhead.Render(fmt.Sprintf("🚀 %d need deploy", pending)),
-			styles.BadgeClean.Render(fmt.Sprintf("✓ %d up to date", total-pending-loading)),
+			styles.StyleCommitsAhead.Render(fmt.Sprintf("🚀 %d need deploy", pending)),
+			styles.StyleBadgeClean.Render(fmt.Sprintf("✓ %d up to date", total-pending-loading)),
 		)
 	} else if loading == 0 {
-		parts = append(parts, styles.BadgeClean.Render("✓ all up to date"))
+		parts = append(parts, styles.StyleBadgeClean.Render("✓ all up to date"))
 	}
 
-	parts = append(parts, styles.Faint.Render(fmt.Sprintf("│ %d repos", total)))
+	parts = append(parts, styles.StyleFaint.Render(fmt.Sprintf("│ %d repos", total)))
 
 	text := strings.Join(parts, "  ")
 
 	if pending > 0 {
-		return styles.SummaryBarPending.Width(width).Render(text)
+		return styles.StyleSummaryBarPending.Width(width).Render(text)
 	}
-	return styles.SummaryBar.Width(width).Render(text)
+	return styles.StyleSummaryBar.Width(width).Render(text)
 }
 
 // ── Footer ────────────────────────────────────────────────────────────────────
 
-func RenderFooter(width int, showModal bool) string {
+func RenderFooter(width int, showModal bool, colOffset int) string {
 	var hints []string
 	if showModal {
 		hints = []string{
@@ -269,8 +281,9 @@ func RenderFooter(width int, showModal bool) string {
 	} else {
 		hints = []string{
 			styles.KeyHint("enter", "expand"),
-			styles.KeyHint("E/C", "expand/collapse all"),
-			styles.KeyHint("r", "refresh all"),
+			styles.KeyHint("E/C", "expand/collapse"),
+			styles.KeyHint("r", "refresh"),
+			styles.KeyHint("←→", "scroll"),
 			styles.KeyHint("a", "add"),
 			styles.KeyHint("d", "delete"),
 			styles.KeyHint("o", "browser"),
@@ -278,7 +291,20 @@ func RenderFooter(width int, showModal bool) string {
 		}
 	}
 	footer := strings.Join(hints, "")
-	ts := styles.Timestamp.Render(time.Now().Format("15:04"))
-	spacer := lipgloss.NewStyle().Width(width - lipgloss.Width(footer) - lipgloss.Width(ts) - 4).Render("")
-	return styles.Footer.Width(width).Render(footer + spacer + ts)
+
+	// Scroll position indicator
+	var scrollIndicator string
+	if colOffset > 0 {
+		colName := Columns[colOffset].Title
+		scrollIndicator = styles.StyleFaint.Render(fmt.Sprintf("  col %d/%d (%s)", colOffset+1, len(Columns), colName))
+	}
+
+	ts := styles.StyleTimestamp.Render(time.Now().Format("15:04"))
+	rightSide := scrollIndicator + "  " + ts
+	spacerW := width - lipgloss.Width(footer) - lipgloss.Width(rightSide) - 2
+	if spacerW < 0 {
+		spacerW = 0
+	}
+	spacer := lipgloss.NewStyle().Width(spacerW).Render("")
+	return styles.StyleFooter.Width(width).Render(footer + spacer + rightSide)
 }

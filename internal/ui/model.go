@@ -38,6 +38,7 @@ type Model struct {
 	loading   map[string]bool
 	expanded  map[string]bool
 	cursor    int
+	colOffset int
 	width     int
 	height    int
 	showModal bool
@@ -49,7 +50,7 @@ type Model struct {
 func New(cfgPath string, cfg *config.Config, gh *github.Client) Model {
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
-	sp.Style = styles.Faint
+	sp.Style = styles.StyleFaint
 
 	return Model{
 		cfg:      cfg,
@@ -205,9 +206,19 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			_ = openBrowser(url)
 		}
 
+	case "left", "h":
+		if m.colOffset > 0 {
+			m.colOffset--
+		}
+
+	case "right", "l":
+		if m.colOffset < len(components.Columns)-1 {
+			m.colOffset++
+		}
+
 	case "?":
 		// Toggle help via statusMsg
-		m.statusMsg = "enter/space=expand  E=expand all  C=collapse all  r=refresh all  R=refresh row  a=add  d=delete  o=browser  j/k=move  q=quit"
+		m.statusMsg = "enter/space=expand  E=expand all  C=collapse all  r=refresh  a=add  d=delete  o=browser  ←→=scroll  j/k=move  q=quit"
 	}
 
 	return m, nil
@@ -260,22 +271,24 @@ func (m Model) View() string {
 		return m.modal.View()
 	}
 
-	const leftWidth = 52
+	innerW := m.width - 2
+	if innerW < 1 {
+		innerW = 1
+	}
 
-	// ── Left panel: ASCII art + tagline ───────────────────────────────────
-	asciiArt := styles.HeaderTitle.Render(
-		"    ________  ____  _________  _____\n" +
-			"   / ___/ _ \\/ __ \\/ ___/ __ `/ ___/\n" +
-			"  / /  /  __/ /_/ / /  / /_/ / /__  \n" +
-			" /_/   \\___/ ____/_/   \\__,_/\\___/  \n" +
+	// ── Title (full width, centered, no border) ───────────────────────────
+	titleBlock := styles.StyleHeaderTitle.Render(
+		"    ________  ____  _________  _____\n"+
+			"   / ___/ _ \\/ __ \\/ ___/ __ `/ ___/\n"+
+			"  / /  /  __/ /_/ / /  / /_/ / /__  \n"+
+			" /_/   \\___/ ____/_/   \\__,_/\\___/  \n"+
 			"          /_/",
-	)
-	leftContent := "\n" + asciiArt + "\n\n" +
-		styles.HeaderSub.Render("  track unreleased changes") + "\n"
-	leftPanel := components.RenderTitledPanel("", leftContent, leftWidth, 9, styles.ColorPrimary)
+	) + "\n\n" + styles.StyleHeaderSub.Render("track unreleased changes")
 
-	// ── Right panel: repo overview ─────────────────────────────────────────
-	rightWidth := m.width - leftWidth
+	titleSection := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Padding(1, 0).Render(titleBlock)
+	titleHeight := lipgloss.Height(titleSection)
+
+	// ── Overview bar (horizontal, single line) ─────────────────────────────
 	total := len(m.cfg.Repos)
 	pending, clean, noRelease := 0, 0, 0
 	loading := len(m.loading)
@@ -292,22 +305,21 @@ func (m Model) View() string {
 			}
 		}
 	}
-	rightContent := buildOverview(total, pending, clean, noRelease, loading, m.noAuth)
-	rightPanel := components.RenderTitledPanel("overview", rightContent, rightWidth, 9, styles.ColorSubtle)
-
-	topRow := lipgloss.JoinHorizontal(lipgloss.Top, leftPanel, rightPanel)
-	topRowHeight := lipgloss.Height(topRow)
+	overviewLine := buildOverviewContent(total, pending, clean, noRelease, loading, m.noAuth)
+	centeredOverview := lipgloss.NewStyle().Width(innerW).Align(lipgloss.Center).Render(overviewLine)
+	overviewPanel := components.RenderTitledPanel("overview", centeredOverview, m.width, 0, styles.ColorSubtle, styles.ColorCyan)
+	overviewHeight := lipgloss.Height(overviewPanel)
 
 	// ── Table panel ───────────────────────────────────────────────────────
 	footerHeight := 1
 	statusHeight := 1
-	tablePanelHeight := m.height - topRowHeight - footerHeight - statusHeight
+	tablePanelHeight := m.height - titleHeight - overviewHeight - footerHeight - statusHeight
 	if tablePanelHeight < 4 {
 		tablePanelHeight = 4
 	}
 
 	tableInner := m.width - 2 // panel left+right border
-	headerStr := components.RenderHeader(tableInner)
+	headerStr := components.RenderHeader(tableInner, m.colOffset)
 	headerHeight := lipgloss.Height(headerStr)
 	dataHeight := tablePanelHeight - 2 - headerHeight // -2 for panel top+bottom border
 	if dataHeight < 1 {
@@ -326,7 +338,7 @@ func (m Model) View() string {
 		isLoading := m.loading[key]
 		isExpanded := m.expanded[key]
 
-		row := components.RenderRow(i, i == m.cursor, key, r.Owner, r.Repo, r.Notes, res, isLoading, isExpanded, tableInner)
+		row := components.RenderRow(i, i == m.cursor, key, r.Owner, r.Repo, r.Notes, res, isLoading, isExpanded, tableInner, m.colOffset)
 		rows = append(rows, row)
 		usedHeight += rowHeight(key, isExpanded, m.results)
 		if usedHeight >= dataHeight {
@@ -339,43 +351,40 @@ func (m Model) View() string {
 	}
 
 	tableContent := headerStr + "\n" + strings.Join(rows, "\n")
-	tablePanel := components.RenderTitledPanel("repositories", tableContent, m.width, 0, styles.ColorSubtle)
+	tablePanel := components.RenderTitledPanel("repositories", tableContent, m.width, 0, styles.ColorAccent, styles.ColorCyan)
 
 	// ── Status bar ────────────────────────────────────────────────────────
 	var statusBar string
 	if m.statusMsg != "" {
-		statusBar = styles.Faint.Width(m.width).Render("  " + m.statusMsg)
+		statusBar = styles.StyleFaint.Width(m.width).Render("  " + m.statusMsg)
 	} else {
-		statusBar = styles.Faint.Width(m.width).Render("")
+		statusBar = styles.StyleFaint.Width(m.width).Render("")
 	}
 
 	// ── Footer ────────────────────────────────────────────────────────────
-	footer := components.RenderFooter(m.width, false)
+	footer := components.RenderFooter(m.width, false, m.colOffset)
 
-	return strings.Join([]string{topRow, tablePanel, statusBar, footer}, "\n")
+	return strings.Join([]string{titleSection, overviewPanel, tablePanel, statusBar, footer}, "\n")
 }
 
-func buildOverview(total, pending, clean, noRelease, loading int, noAuth bool) string {
-	var lines []string
-	lines = append(lines, "")
+func buildOverviewContent(total, pending, clean, noRelease, loading int, noAuth bool) string {
+	sep := styles.StyleSubtle.Render("  │  ")
+
+	var parts []string
 	if loading > 0 {
-		lines = append(lines, styles.Faint.Render(fmt.Sprintf("  ⏳  checking %d...", loading)))
+		parts = append(parts, styles.StyleFaint.Render(fmt.Sprintf("⏳ %d checking", loading)))
 	}
-	if pending > 0 {
-		lines = append(lines, styles.CommitsAhead.Render(fmt.Sprintf("  ▲  %d  need deploy", pending)))
-	}
-	if clean > 0 {
-		lines = append(lines, styles.BadgeClean.Render(fmt.Sprintf("  ✓  %d  up to date", clean)))
-	}
+	parts = append(parts, styles.StyleCommitsAhead.Render(fmt.Sprintf("▲ %d  need deploy", pending)))
+	parts = append(parts, styles.StyleBadgeClean.Render(fmt.Sprintf("✓ %d  up to date", clean)))
 	if noRelease > 0 {
-		lines = append(lines, styles.BadgeNoRelease.Render(fmt.Sprintf("  ◈  %d  no release", noRelease)))
+		parts = append(parts, styles.StyleBadgeNoRelease.Render(fmt.Sprintf("◈ %d  no release", noRelease)))
 	}
-	lines = append(lines, styles.Faint.Render(fmt.Sprintf("  ·  %d  repos", total)))
+	parts = append(parts, styles.StyleFaint.Render(fmt.Sprintf("·  %d  repositories", total)))
 	if noAuth {
-		lines = append(lines, "")
-		lines = append(lines, styles.Faint.Render("  ⚠  no auth · set GITHUB_TOKEN"))
+		parts = append(parts, styles.StyleBadgeError.Render("⚠ no auth · set GITHUB_TOKEN"))
 	}
-	return strings.Join(lines, "\n")
+
+	return strings.Join(parts, sep)
 }
 
 // rowHeight returns how many terminal lines a repo row occupies.
