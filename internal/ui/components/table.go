@@ -18,10 +18,10 @@ type Column struct {
 
 var Columns = []Column{
 	{Title: "STATUS", Width: 18},
-	{Title: "REPOSITORY", Width: 30},
+	{Title: "REPOSITORY", Width: 45},
 	{Title: "BRANCH", Width: 12},
 	{Title: "LAST TAG / RELEASE", Width: 22},
-	{Title: "UNRELEASED", Width: 14},
+	{Title: "UNRELEASED", Width: 16},
 	{Title: "NOTES", Width: 24},
 	{Title: "CHECKED", Width: 10},
 }
@@ -68,7 +68,11 @@ func RenderRow(
 		if used+cellW > termWidth && len(rendered) > 0 {
 			break
 		}
-		rendered = append(rendered, styles.StyleCell.Width(Columns[i].Width).Render(cells[i]))
+		cellStyle := styles.StyleCell.Width(Columns[i].Width)
+		if i == 4 {
+			cellStyle = cellStyle.Align(lipgloss.Right)
+		}
+		rendered = append(rendered, cellStyle.Render(cells[i]))
 		used += cellW
 	}
 

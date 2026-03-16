@@ -16,6 +16,17 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+// ── Filter modes ──────────────────────────────────────────────────────────────
+
+const (
+	filterAll        = 0
+	filterNeedDeploy = 1
+	filterUpToDate   = 2
+	filterNoRelease  = 3
+)
+
+var filterLabels = []string{"all", "need deploy", "up to date", "no release"}
+
 // ── Messages ──────────────────────────────────────────────────────────────────
 
 type repoCheckedMsg struct {
@@ -41,13 +52,15 @@ type Model struct {
 	colOffset int
 	width     int
 	height    int
-	showModal bool
-	modal     components.AddRepoModal
-	statusMsg string
-	noAuth    bool
+	showModal  bool
+	modal      components.AddRepoModal
+	statusMsg  string
+	noAuth     bool
+	filterMode int
+	version    string
 }
 
-func New(cfgPath string, cfg *config.Config, gh *github.Client) Model {
+func New(cfgPath string, cfg *config.Config, gh *github.Client, version string) Model {
 	sp := spinner.New()
 	sp.Spinner = spinner.Dot
 	sp.Style = styles.StyleFaint
@@ -61,11 +74,41 @@ func New(cfgPath string, cfg *config.Config, gh *github.Client) Model {
 		loading:  make(map[string]bool),
 		expanded: make(map[string]bool),
 		noAuth:   !gh.HasAuth(),
+		version:  version,
 	}
 }
 
 func repoKey(owner, repo string) string {
 	return owner + "/" + repo
+}
+
+func (m Model) visibleRepos() []config.RepoConfig {
+	if m.filterMode == filterAll {
+		return m.cfg.Repos
+	}
+	var out []config.RepoConfig
+	for _, r := range m.cfg.Repos {
+		key := repoKey(r.Owner, r.Repo)
+		res := m.results[key]
+		if res == nil {
+			continue
+		}
+		switch m.filterMode {
+		case filterNeedDeploy:
+			if res.Status == github.StatusBehind {
+				out = append(out, r)
+			}
+		case filterUpToDate:
+			if res.Status == github.StatusClean {
+				out = append(out, r)
+			}
+		case filterNoRelease:
+			if res.Status == github.StatusNoRelease {
+				out = append(out, r)
+			}
+		}
+	}
+	return out
 }
 
 // ── Init ──────────────────────────────────────────────────────────────────────
@@ -127,7 +170,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
-	repos := m.cfg.Repos
+	repos := m.visibleRepos()
 
 	switch msg.String() {
 	case "q", "ctrl+c":
@@ -147,12 +190,14 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.cursor = 0
 
 	case "G":
-		m.cursor = len(repos) - 1
+		if len(repos) > 0 {
+			m.cursor = len(repos) - 1
+		}
 
 	case "r":
 		// Refresh all
 		cmds := []tea.Cmd{}
-		for _, r := range repos {
+		for _, r := range m.cfg.Repos {
 			cmds = append(cmds, m.checkRepo(r.Owner, r.Repo))
 		}
 		m.statusMsg = "Refreshing all..."
@@ -173,7 +218,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 
 	case "E":
-		for _, r := range repos {
+		for _, r := range m.cfg.Repos {
 			m.expanded[repoKey(r.Owner, r.Repo)] = true
 		}
 
@@ -189,10 +234,18 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		if len(repos) > 0 && m.cursor < len(repos) {
 			r := repos[m.cursor]
 			key := repoKey(r.Owner, r.Repo)
-			m.cfg.Repos = append(repos[:m.cursor], repos[m.cursor+1:]...)
+			newAll := make([]config.RepoConfig, 0, len(m.cfg.Repos))
+			for _, cr := range m.cfg.Repos {
+				if repoKey(cr.Owner, cr.Repo) != key {
+					newAll = append(newAll, cr)
+				}
+			}
+			m.cfg.Repos = newAll
 			delete(m.results, key)
 			delete(m.loading, key)
-			if m.cursor >= len(m.cfg.Repos) && m.cursor > 0 {
+			delete(m.expanded, key)
+			newVisible := m.visibleRepos()
+			if m.cursor >= len(newVisible) && m.cursor > 0 {
 				m.cursor--
 			}
 			_ = config.Save(m.cfgPath, m.cfg)
@@ -206,6 +259,11 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			_ = openBrowser(url)
 		}
 
+	case "f":
+		m.filterMode = (m.filterMode + 1) % 4
+		m.cursor = 0
+		m.statusMsg = "filter: " + filterLabels[m.filterMode]
+
 	case "left", "h":
 		if m.colOffset > 0 {
 			m.colOffset--
@@ -218,7 +276,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "?":
 		// Toggle help via statusMsg
-		m.statusMsg = "enter/space=expand  E=expand all  C=collapse all  r=refresh  a=add  d=delete  o=browser  ←→=scroll  j/k=move  q=quit"
+		m.statusMsg = "enter/space=expand  E=expand all  C=collapse all  r=refresh  a=add  d=delete  o=browser  f=filter  ←→=scroll  j/k=move  q=quit"
 	}
 
 	return m, nil
@@ -283,7 +341,7 @@ func (m Model) View() string {
 			"  / /  /  __/ /_/ / /  / /_/ / /__  \n"+
 			" /_/   \\___/ ____/_/   \\__,_/\\___/  \n"+
 			"          /_/",
-	) + "\n\n" + styles.StyleHeaderSub.Render("track unreleased changes")
+	) + "\n\n" + styles.StyleHeaderSub.Render("track unreleased changes  ·  "+m.version)
 
 	titleSection := lipgloss.NewStyle().Width(m.width).Align(lipgloss.Center).Padding(1, 0).Render(titleBlock)
 	titleHeight := lipgloss.Height(titleSection)
@@ -326,7 +384,7 @@ func (m Model) View() string {
 		dataHeight = 1
 	}
 
-	repos := m.cfg.Repos
+	repos := m.visibleRepos()
 	start, end := scrollWindow(m.cursor, repos, m.expanded, m.results, dataHeight)
 
 	var rows []string
@@ -351,7 +409,11 @@ func (m Model) View() string {
 	}
 
 	tableContent := headerStr + "\n" + strings.Join(rows, "\n")
-	tablePanel := components.RenderTitledPanel("repositories", tableContent, m.width, 0, styles.ColorAccent, styles.ColorCyan)
+	tableTitle := "repositories"
+	if m.filterMode != filterAll {
+		tableTitle = "repositories · " + filterLabels[m.filterMode]
+	}
+	tablePanel := components.RenderTitledPanel(tableTitle, tableContent, m.width, 0, styles.ColorAccent, styles.ColorCyan)
 
 	// ── Status bar ────────────────────────────────────────────────────────
 	var statusBar string

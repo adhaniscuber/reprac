@@ -1,6 +1,6 @@
 BINARY := reprac
-VERSION := 0.1.2
-BUILD_FLAGS := -ldflags="-s -w -X main.version=$(VERSION)"
+VERSION := $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+BUILD_FLAGS := -ldflags="-s -w -X github.com/adhaniscuber/reprac/cmd.Version=$(VERSION)"
 
 .PHONY: all build install run tidy clean
 

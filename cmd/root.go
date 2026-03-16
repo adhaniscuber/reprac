@@ -13,6 +13,9 @@ import (
 
 var cfgPath string
 
+// Version is set at build time via -ldflags.
+var Version = "dev"
+
 var rootCmd = &cobra.Command{
 	Use:   "reprac",
 	Short: "TUI dashboard to track unreleased GitHub repo changes",
@@ -34,7 +37,7 @@ Examples:
 
 		gh := github.New()
 
-		m := ui.New(cfgPath, cfg, gh)
+		m := ui.New(cfgPath, cfg, gh, Version)
 		p := tea.NewProgram(m, tea.WithAltScreen())
 		_, err = p.Run()
 		return err
@@ -68,7 +71,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("reprac v0.1.2")
+		fmt.Println("reprac " + Version)
 	},
 }
 
