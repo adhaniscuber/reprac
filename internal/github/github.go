@@ -25,8 +25,9 @@ type RepoStatus struct {
 	Branch       string
 	TagName      string       // latest tag or release name
 	RefType      string       // "release" or "tag"
+	RefDate      time.Time    // when the release was published / tag commit date
 	CommitsAhead int          // commits on main since last tag/release
-	Commits      []CommitInfo // up to 5 most recent, newest first
+	Commits      []CommitInfo // commits on default branch ahead of ref, newest first
 	Status       Status
 	ErrorMsg     string
 	LastChecked  time.Time
@@ -141,7 +142,7 @@ func (c *Client) CheckRepo(ctx context.Context, owner, repo string) RepoStatus {
 	result.Branch = branch
 
 	// 2. Try latest release, fall back to latest tag
-	refSHA, refName, refType, err := c.getLatestRef(ctx, owner, repo)
+	refSHA, refName, refType, refDate, err := c.getLatestRef(ctx, owner, repo)
 	if err != nil {
 		result.Status = StatusError
 		result.ErrorMsg = shortErr(err)
@@ -154,6 +155,7 @@ func (c *Client) CheckRepo(ctx context.Context, owner, repo string) RepoStatus {
 
 	result.TagName = refName
 	result.RefType = refType
+	result.RefDate = refDate
 
 	// 3. Compare ref..branch
 	ahead, commits, err := c.compareCommits(ctx, owner, repo, refSHA, branch)
@@ -187,15 +189,21 @@ func (c *Client) getDefaultBranch(ctx context.Context, owner, repo string) (stri
 	return r.DefaultBranch, nil
 }
 
-func (c *Client) getLatestRef(ctx context.Context, owner, repo string) (sha, name, refType string, err error) {
+func (c *Client) getLatestRef(ctx context.Context, owner, repo string) (sha, name, refType string, date time.Time, err error) {
 	// Try release first
 	var release struct {
-		TagName string `json:"tag_name"`
+		TagName     string    `json:"tag_name"`
+		PublishedAt time.Time `json:"published_at"`
+		CreatedAt   time.Time `json:"created_at"`
 	}
-	if err := c.get(ctx, fmt.Sprintf("/repos/%s/%s/releases/latest", owner, repo), &release); err == nil && release.TagName != "" {
-		sha, err := c.resolveTagSHA(ctx, owner, repo, release.TagName)
-		if err == nil {
-			return sha, release.TagName, "release", nil
+	if e := c.get(ctx, fmt.Sprintf("/repos/%s/%s/releases/latest", owner, repo), &release); e == nil && release.TagName != "" {
+		s, e2 := c.resolveTagSHA(ctx, owner, repo, release.TagName)
+		if e2 == nil {
+			d := release.PublishedAt
+			if d.IsZero() {
+				d = release.CreatedAt
+			}
+			return s, release.TagName, "release", d, nil
 		}
 	}
 
@@ -206,21 +214,43 @@ func (c *Client) getLatestRef(ctx context.Context, owner, repo string) (sha, nam
 			SHA string `json:"sha"`
 		} `json:"commit"`
 	}
-	if err := c.get(ctx, fmt.Sprintf("/repos/%s/%s/tags?per_page=1", owner, repo), &tags); err != nil {
-		return "", "", "", err
+	if e := c.get(ctx, fmt.Sprintf("/repos/%s/%s/tags?per_page=1", owner, repo), &tags); e != nil {
+		return "", "", "", time.Time{}, e
 	}
 	if len(tags) == 0 {
-		return "", "", "", nil // no tags at all
+		return "", "", "", time.Time{}, nil // no tags at all
 	}
 
 	tag := tags[0]
 	sha = tag.Commit.SHA
 	// Resolve annotated tags
-	if resolved, err := c.resolveTagSHA(ctx, owner, repo, tag.Name); err == nil {
+	if resolved, e := c.resolveTagSHA(ctx, owner, repo, tag.Name); e == nil {
 		sha = resolved
 	}
 
-	return sha, tag.Name, "tag", nil
+	// Fetch commit date for tag
+	date = c.commitDate(ctx, owner, repo, sha)
+	return sha, tag.Name, "tag", date, nil
+}
+
+func (c *Client) commitDate(ctx context.Context, owner, repo, sha string) time.Time {
+	var commit struct {
+		Commit struct {
+			Author struct {
+				Date time.Time `json:"date"`
+			} `json:"author"`
+			Committer struct {
+				Date time.Time `json:"date"`
+			} `json:"committer"`
+		} `json:"commit"`
+	}
+	if err := c.get(ctx, fmt.Sprintf("/repos/%s/%s/commits/%s", owner, repo, sha), &commit); err != nil {
+		return time.Time{}
+	}
+	if !commit.Commit.Committer.Date.IsZero() {
+		return commit.Commit.Committer.Date
+	}
+	return commit.Commit.Author.Date
 }
 
 func (c *Client) resolveTagSHA(ctx context.Context, owner, repo, tag string) (string, error) {
@@ -268,28 +298,20 @@ func (c *Client) compareCommits(ctx context.Context, owner, repo, base, head str
 		return 0, nil, err
 	}
 
-	// Take up to 5 most recent commits (API returns oldest first, so take from end)
-	const maxCommits = 5
+	// Return all commits (GitHub compare API caps at 250).
+	// API returns oldest first; reverse so newest is first.
 	all := cmp.Commits
-	start := 0
-	if len(all) > maxCommits {
-		start = len(all) - maxCommits
-	}
-	recent := all[start:]
-
-	// Reverse so newest is first
-	commits := make([]CommitInfo, len(recent))
-	for i, c := range recent {
+	commits := make([]CommitInfo, len(all))
+	for i, c := range all {
 		sha := c.SHA
 		if len(sha) > 7 {
 			sha = sha[:7]
 		}
-		// Only first line of commit message
 		msg := c.Commit.Message
 		if idx := strings.Index(msg, "\n"); idx != -1 {
 			msg = msg[:idx]
 		}
-		commits[len(recent)-1-i] = CommitInfo{SHA: sha, Message: msg, Date: c.Commit.Author.Date}
+		commits[len(all)-1-i] = CommitInfo{SHA: sha, Message: msg, Date: c.Commit.Author.Date}
 	}
 
 	return cmp.AheadBy, commits, nil

@@ -1,0 +1,795 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>reprac · track unreleased changes</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@200;300&family=JetBrains+Mono:wght@200;300&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ["Geist Mono", "JetBrains Mono", "ui-monospace", "monospace"],
+              mono: ["Geist Mono", "JetBrains Mono", "ui-monospace", "monospace"],
+            },
+            colors: {
+              border: "hsl(var(--border))",
+              input: "hsl(var(--input))",
+              ring: "hsl(var(--ring))",
+              background: "hsl(var(--background))",
+              foreground: "hsl(var(--foreground))",
+              primary: {
+                DEFAULT: "hsl(var(--primary))",
+                foreground: "hsl(var(--primary-foreground))",
+              },
+              secondary: {
+                DEFAULT: "hsl(var(--secondary))",
+                foreground: "hsl(var(--secondary-foreground))",
+              },
+              muted: {
+                DEFAULT: "hsl(var(--muted))",
+                foreground: "hsl(var(--muted-foreground))",
+              },
+              accent: {
+                DEFAULT: "hsl(var(--accent))",
+                foreground: "hsl(var(--accent-foreground))",
+              },
+              destructive: {
+                DEFAULT: "hsl(var(--destructive))",
+                foreground: "hsl(var(--destructive-foreground))",
+              },
+              card: {
+                DEFAULT: "hsl(var(--card))",
+                foreground: "hsl(var(--card-foreground))",
+              },
+            },
+            borderRadius: {
+              lg: "var(--radius)",
+              md: "calc(var(--radius) - 2px)",
+              sm: "calc(var(--radius) - 4px)",
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      :root {
+        --background: 0 0% 100%;
+        --foreground: 240 10% 3.9%;
+        --card: 0 0% 100%;
+        --card-foreground: 240 10% 3.9%;
+        --primary: 240 5.9% 10%;
+        --primary-foreground: 0 0% 98%;
+        --secondary: 240 4.8% 95.9%;
+        --secondary-foreground: 240 5.9% 10%;
+        --muted: 240 4.8% 95.9%;
+        --muted-foreground: 240 3.8% 46.1%;
+        --accent: 240 4.8% 95.9%;
+        --accent-foreground: 240 5.9% 10%;
+        --destructive: 0 84.2% 60.2%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 5.9% 90%;
+        --input: 240 5.9% 90%;
+        --ring: 240 5.9% 10%;
+        --radius: 0.5rem;
+      }
+      .dark {
+        --background: 240 10% 3.9%;
+        --foreground: 0 0% 98%;
+        --card: 240 10% 5.5%;
+        --card-foreground: 0 0% 98%;
+        --primary: 0 0% 98%;
+        --primary-foreground: 240 5.9% 10%;
+        --secondary: 240 3.7% 15.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
+        --destructive: 0 62.8% 30.6%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 3.7% 15.9%;
+        --input: 240 3.7% 15.9%;
+        --ring: 240 4.9% 83.9%;
+      }
+      body {
+        background: hsl(var(--background));
+        color: hsl(var(--foreground));
+        font-family: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+        font-weight: 300;
+        font-feature-settings: "ss01", "cv11";
+      }
+      .mono {
+        font-family: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+      }
+      /* Global reset — only weights 200 and 300 exist in this UI. */
+      *,
+      *::before,
+      *::after,
+      h1, h2, h3, h4, h5, h6,
+      strong, b, em, i,
+      button, input, select, textarea, code, kbd, samp,
+      .font-medium, .font-semibold, .font-bold {
+        font-weight: 300 !important;
+      }
+      /* Lightest weight (200) for muted / supporting text */
+      .text-muted-foreground,
+      .text-xs,
+      .filter-btn,
+      footer,
+      footer * {
+        font-weight: 200 !important;
+      }
+      /* Clamp font sizes inside repo items: 10px min, 14px max */
+      #repoList article { font-size: 12px; line-height: 1.45; }
+      #repoList article * { font-size: 12px; } /* default cap for raw elements */
+      #repoList article .text-base { font-size: 14px !important; line-height: 1.4; }
+      #repoList article .text-sm   { font-size: 13px !important; line-height: 1.4; }
+      #repoList article .text-xs   { font-size: 11px !important; line-height: 1.4; }
+      #repoList article code       { font-size: 11px !important; }
+      /* Action icons (↗ ↻ ✕) — buttons/anchors default to 16px in browsers */
+      #repoList article a,
+      #repoList article button { font-size: 14px !important; line-height: 1; }
+      .filter-btn {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.875rem;
+        color: hsl(var(--muted-foreground));
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        cursor: pointer;
+        background: transparent;
+      }
+      .filter-btn:hover {
+        color: hsl(var(--foreground));
+      }
+      .filter-btn.active {
+        color: hsl(var(--foreground));
+        border-bottom-color: hsl(var(--foreground));
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body class="min-h-screen">
+    <div class="mx-auto max-w-6xl px-6 py-8">
+      <header class="flex items-end justify-between mb-8 flex-wrap gap-4">
+        <div>
+          <h1 class="text-3xl font-bold tracking-tight flex items-center gap-3">
+            <span class="mono text-primary">reprac</span>
+            <span
+              id="version"
+              class="text-xs text-muted-foreground mono font-normal px-2 py-0.5 rounded border border-border"
+              >dev</span
+            >
+          </h1>
+          <p class="text-sm text-muted-foreground mt-1">
+            track unreleased GitHub repository changes · never forget to deploy again
+          </p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            id="copyReleaseBtn"
+            title="Copy release announcement (markdown)"
+            class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-border bg-card hover:bg-accent h-9 px-4 py-2"
+          >
+            <span class="mono mr-2">⧉</span> <span id="copyReleaseLabel">Copy</span>
+          </button>
+          <button
+            id="refreshAllBtn"
+            class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-border bg-card hover:bg-accent h-9 px-4 py-2"
+          >
+            <span class="mono mr-2">↻</span> Refresh all
+          </button>
+          <button
+            id="addRepoBtn"
+            class="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            <span class="mr-1">+</span> Add repo
+          </button>
+        </div>
+      </header>
+
+      <div
+        id="authWarn"
+        class="hidden mb-4 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive-foreground p-4 text-sm"
+      >
+        <span class="font-medium">⚠ no GitHub auth detected.</span>
+        Set <code class="mono px-1 py-0.5 rounded bg-destructive/20">GITHUB_TOKEN</code>
+        or run <code class="mono px-1 py-0.5 rounded bg-destructive/20">gh auth login</code>.
+      </div>
+
+      <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+        <div class="rounded-lg border border-border bg-card p-4">
+          <div class="text-xs uppercase tracking-wider text-muted-foreground">need deploy</div>
+          <div id="ovPending" class="text-3xl font-bold mt-1 text-amber-400 mono">0</div>
+        </div>
+        <div class="rounded-lg border border-border bg-card p-4">
+          <div class="text-xs uppercase tracking-wider text-muted-foreground">up to date</div>
+          <div id="ovClean" class="text-3xl font-bold mt-1 text-emerald-400 mono">0</div>
+        </div>
+        <div class="rounded-lg border border-border bg-card p-4">
+          <div class="text-xs uppercase tracking-wider text-muted-foreground">no release</div>
+          <div id="ovNoRelease" class="text-3xl font-bold mt-1 text-sky-400 mono">0</div>
+        </div>
+        <div class="rounded-lg border border-border bg-card p-4">
+          <div class="text-xs uppercase tracking-wider text-muted-foreground">total</div>
+          <div id="ovTotal" class="text-3xl font-bold mt-1 mono">0</div>
+        </div>
+      </section>
+
+      <div class="flex items-center justify-between gap-3 mb-4 border-b border-border flex-wrap">
+        <div class="flex items-center gap-1">
+          <button data-filter="all" class="filter-btn">All</button>
+          <button data-filter="behind" class="filter-btn">Need deploy</button>
+          <button data-filter="clean" class="filter-btn">Up to date</button>
+          <button data-filter="no_release" class="filter-btn">No release</button>
+        </div>
+        <div class="flex items-center gap-2 pb-2">
+          <label for="afterDate" class="text-xs text-muted-foreground">
+            Changes after
+          </label>
+          <input
+            id="afterDate"
+            type="date"
+            class="mono h-8 rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <button
+            id="presetWeek"
+            type="button"
+            title="Last Monday"
+            class="h-8 px-2 rounded-md border border-border bg-card hover:bg-accent text-xs"
+          >
+            Mon
+          </button>
+          <button
+            id="clearDate"
+            type="button"
+            title="Clear date filter"
+            class="hidden h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
+      <div
+        id="dateFilterStatus"
+        class="hidden mb-3 text-xs text-muted-foreground flex items-center gap-2"
+      >
+        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 mono">
+          📅 <span id="dateFilterLabel"></span>
+        </span>
+        <span id="dateFilterCount"></span>
+      </div>
+
+      <section id="repoList" class="space-y-2"></section>
+
+      <p
+        id="emptyState"
+        class="hidden text-center text-muted-foreground py-12 text-sm"
+      >
+        No repositories tracked. Click <span class="font-medium">Add repo</span> to get started.
+      </p>
+
+      <footer class="mt-10 pt-6 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
+        <span>reprac · web view · press <code class="mono">a</code> to add · <code class="mono">r</code> to refresh</span>
+        <span class="mono" id="lastSync"></span>
+      </footer>
+    </div>
+
+    <div
+      id="addModal"
+      class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
+    >
+      <div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-2xl">
+        <h2 class="text-lg font-semibold mb-1">Add repository</h2>
+        <p class="text-sm text-muted-foreground mb-4">
+          Paste a GitHub URL or fill the fields manually.
+        </p>
+        <form id="addForm" class="space-y-3">
+          <div>
+            <label class="text-sm font-medium">Paste URL</label>
+            <input
+              id="addUrl"
+              type="text"
+              placeholder="https://github.com/owner/repo"
+              class="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-sm font-medium">Owner</label>
+              <input
+                id="addOwner"
+                type="text"
+                required
+                class="mono mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label class="text-sm font-medium">Repo</label>
+              <input
+                id="addRepo"
+                type="text"
+                required
+                class="mono mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="text-sm font-medium">Notes</label>
+            <input
+              id="addNotes"
+              type="text"
+              class="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+            />
+          </div>
+          <div id="addError" class="hidden text-sm text-destructive-foreground bg-destructive/20 rounded px-3 py-2"></div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button
+              type="button"
+              id="cancelAdd"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-border bg-card hover:bg-accent h-9 px-4"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4"
+            >
+              Add
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      const state = {
+        repos: [],
+        filter: "all",
+        expanded: new Set(),
+        afterDate: null, // Date instance or null (start of selected day, local tz)
+      };
+
+      // ── Date filter helpers ───────────────────────────────────────────────
+      function parseDateInput(v) {
+        // v is "YYYY-MM-DD" from <input type="date">; treat as local midnight.
+        if (!v) return null;
+        const [y, m, d] = v.split("-").map(Number);
+        if (!y || !m || !d) return null;
+        return new Date(y, m - 1, d, 0, 0, 0, 0);
+      }
+      function fmtDateInput(date) {
+        const y = date.getFullYear();
+        const m = String(date.getMonth() + 1).padStart(2, "0");
+        const d = String(date.getDate()).padStart(2, "0");
+        return `${y}-${m}-${d}`;
+      }
+      function lastMonday() {
+        const d = new Date();
+        const day = d.getDay(); // 0=Sun .. 1=Mon .. 6=Sat
+        const diff = (day === 0 ? 6 : day - 1); // days back to Monday
+        d.setDate(d.getDate() - diff);
+        d.setHours(0, 0, 0, 0);
+        return d;
+      }
+      function repoHasCommitsAfter(r, after) {
+        if (!r.commits || r.commits.length === 0) return false;
+        return r.commits.some((c) => new Date(c.date) >= after);
+      }
+
+      // safeSet: defense-in-depth — already-escaped strings are sanitized again via DOMPurify.
+      function safeSet(el, html) {
+        el.innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ["target"] });
+      }
+
+      async function api(path, opts = {}) {
+        const res = await fetch(path, {
+          headers: { "Content-Type": "application/json" },
+          ...opts,
+        });
+        if (!res.ok) {
+          const text = await res.text();
+          throw new Error(text || res.statusText);
+        }
+        const ct = res.headers.get("content-type") || "";
+        return ct.includes("application/json") ? res.json() : res.text();
+      }
+
+      async function loadMeta() {
+        try {
+          const m = await api("/api/meta");
+          document.getElementById("version").textContent = m.version || "dev";
+          document.getElementById("authWarn").classList.toggle("hidden", !!m.hasAuth);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      async function loadRepos() {
+        try {
+          state.repos = await api("/api/repos");
+          render();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function escapeHtml(s) {
+        return (s || "").replace(/[&<>"']/g, (c) => ({
+          "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+        }[c]));
+      }
+
+      function statusBadge(r) {
+        const map = {
+          loading: ["…", "bg-muted text-muted-foreground", "checking"],
+          clean: ["✓", "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30", "up to date"],
+          behind: ["▲", "bg-amber-500/15 text-amber-400 border border-amber-500/30", `${r.commitsAhead} ahead`],
+          no_release: ["◈", "bg-sky-500/15 text-sky-400 border border-sky-500/30", "no release"],
+          error: ["✕", "bg-destructive/20 text-destructive-foreground border border-destructive/40", r.errorMsg || "error"],
+          unknown: ["·", "bg-muted text-muted-foreground", "—"],
+        };
+        const [icon, cls, label] = map[r.status] || map.unknown;
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${cls}"><span class="mono">${icon}</span>${escapeHtml(label)}</span>`;
+      }
+
+      function fmtDate(s) {
+        // dd mmm yyyy · HH:MM (24h, local tz) — used for commit timestamps
+        if (!s) return "";
+        const d = new Date(s);
+        const dd = String(d.getDate()).padStart(2, "0");
+        const hh = String(d.getHours()).padStart(2, "0");
+        const mi = String(d.getMinutes()).padStart(2, "0");
+        return `${dd} ${MONTHS[d.getMonth()]} ${d.getFullYear()} · ${hh}:${mi}`;
+      }
+
+      const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+      function fmtDateShort(s) {
+        // dd mmm yyyy (e.g. "04 May 2026")
+        if (!s) return "";
+        const d = new Date(s);
+        const dd = String(d.getDate()).padStart(2, "0");
+        return `${dd} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+      }
+
+      function relTime(s) {
+        if (!s) return "";
+        const d = new Date(s);
+        const diff = Date.now() - d.getTime();
+        const m = Math.floor(diff / 60000);
+        if (m < 1) return "just now";
+        if (m < 60) return `${m}m ago`;
+        const h = Math.floor(m / 60);
+        if (h < 24) return `${h}h ago`;
+        return `${Math.floor(h / 24)}d ago`;
+      }
+
+      function repoCard(r) {
+        const key = r.owner + "/" + r.repo;
+        const open = state.expanded.has(key);
+        const canExpand = r.status === "behind" && r.commits && r.commits.length > 0;
+
+        let commitsHtml = "";
+        if (open && canExpand) {
+          // max-h ≈ 10 rows; each row ~2.6rem with gap. Scroll vertically.
+          const truncated = r.commitsAhead > r.commits.length;
+          commitsHtml = `
+            <div class="mt-3 pt-3 border-t border-border">
+              <div class="space-y-1.5 overflow-y-auto pr-1" style="max-height: 28rem;">
+                ${r.commits
+                  .map(
+                    (c) => `
+                  <div class="flex items-start gap-3 text-sm py-0.5">
+                    <code class="mono text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">${escapeHtml(c.sha)}</code>
+                    <div class="flex-1 min-w-0">
+                      <div class="truncate">${escapeHtml(c.message)}</div>
+                      <div class="text-xs text-muted-foreground">${escapeHtml(fmtDate(c.date))}</div>
+                    </div>
+                  </div>`
+                  )
+                  .join("")}
+              </div>
+              ${
+                truncated
+                  ? `<div class="text-xs text-muted-foreground pl-2 pt-2 italic">+ ${r.commitsAhead - r.commits.length} older commits not shown by GitHub</div>`
+                  : ""
+              }
+            </div>`;
+        }
+
+        const refLabel = r.tagName
+          ? `<span class="text-xs text-muted-foreground">${escapeHtml(r.refType || "ref")}: <code class="mono text-foreground">${escapeHtml(r.tagName)}</code>${
+              r.refDate
+                ? ` <span class="text-muted-foreground">· ${escapeHtml(fmtDateShort(r.refDate))}</span>`
+                : ""
+            }</span>`
+          : "";
+        const branchLabel = r.branch
+          ? `<span class="text-xs text-muted-foreground">branch: <code class="mono text-foreground">${escapeHtml(r.branch)}</code></span>`
+          : "";
+
+        return `
+          <article class="rounded-lg border border-border bg-card hover:border-foreground/20 transition-colors">
+            <div
+              class="p-4 ${canExpand ? "cursor-pointer" : ""}"
+              data-action="${canExpand ? "toggle" : ""}"
+              data-key="${escapeHtml(key)}"
+            >
+              <div class="flex items-start justify-between gap-4 flex-wrap">
+                <div class="min-w-0 flex-1">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="text-base font-semibold mono truncate">${escapeHtml(key)}</h3>
+                    ${statusBadge(r)}
+                  </div>
+                  ${
+                    r.notes
+                      ? `<p class="text-sm text-muted-foreground mt-1">${escapeHtml(r.notes)}</p>`
+                      : ""
+                  }
+                  <div class="flex items-center gap-4 mt-2 flex-wrap">
+                    ${branchLabel}
+                    ${refLabel}
+                    ${
+                      r.lastChecked
+                        ? `<span class="text-xs text-muted-foreground">checked ${escapeHtml(relTime(r.lastChecked))}</span>`
+                        : ""
+                    }
+                  </div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0" data-action="stop">
+                  <a
+                    href="${escapeHtml(r.url)}"
+                    target="_blank"
+                    rel="noopener"
+                    title="Open on GitHub"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
+                  >↗</a>
+                  <button
+                    title="Refresh"
+                    data-action="refresh"
+                    data-owner="${escapeHtml(r.owner)}"
+                    data-repo="${escapeHtml(r.repo)}"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground mono"
+                  >↻</button>
+                  <button
+                    title="Remove"
+                    data-action="delete"
+                    data-owner="${escapeHtml(r.owner)}"
+                    data-repo="${escapeHtml(r.repo)}"
+                    class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive-foreground"
+                  >✕</button>
+                </div>
+              </div>
+              ${commitsHtml}
+            </div>
+          </article>`;
+      }
+
+      function render() {
+        let pending = 0, clean = 0, noRelease = 0;
+        for (const r of state.repos) {
+          if (r.status === "behind") pending++;
+          else if (r.status === "clean") clean++;
+          else if (r.status === "no_release") noRelease++;
+        }
+        document.getElementById("ovPending").textContent = pending;
+        document.getElementById("ovClean").textContent = clean;
+        document.getElementById("ovNoRelease").textContent = noRelease;
+        document.getElementById("ovTotal").textContent = state.repos.length;
+
+        let visible = state.repos;
+        if (state.filter !== "all") {
+          visible = visible.filter((r) => r.status === state.filter);
+        }
+        if (state.afterDate) {
+          visible = visible.filter((r) => repoHasCommitsAfter(r, state.afterDate));
+        }
+
+        const order = { behind: 0, loading: 1, no_release: 2, clean: 3, error: 4, unknown: 5 };
+        visible.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
+
+        // Date filter status banner
+        const dfs = document.getElementById("dateFilterStatus");
+        if (state.afterDate) {
+          dfs.classList.remove("hidden");
+          document.getElementById("dateFilterLabel").textContent =
+            "after " + state.afterDate.toLocaleDateString();
+          document.getElementById("dateFilterCount").textContent =
+            `· ${visible.length} of ${state.repos.length} repos`;
+          document.getElementById("clearDate").classList.remove("hidden");
+        } else {
+          dfs.classList.add("hidden");
+          document.getElementById("clearDate").classList.add("hidden");
+        }
+
+        safeSet(document.getElementById("repoList"), visible.map(repoCard).join(""));
+
+        document
+          .getElementById("emptyState")
+          .classList.toggle("hidden", state.repos.length > 0);
+
+        document
+          .querySelectorAll(".filter-btn")
+          .forEach((b) => b.classList.toggle("active", b.dataset.filter === state.filter));
+
+        document.getElementById("lastSync").textContent =
+          "synced " + new Date().toLocaleTimeString();
+      }
+
+      document.getElementById("repoList").addEventListener("click", async (e) => {
+        // stop propagation for action button cluster
+        const stop = e.target.closest('[data-action="stop"]');
+        const t = e.target.closest("[data-action]");
+        if (!t) return;
+        const action = t.dataset.action;
+        if (action === "stop") return;
+        if (action === "toggle") {
+          if (stop && stop !== t) return;
+          const k = t.dataset.key;
+          if (state.expanded.has(k)) state.expanded.delete(k);
+          else state.expanded.add(k);
+          render();
+        } else if (action === "refresh") {
+          const { owner, repo } = t.dataset;
+          await api(`/api/repos/${owner}/${repo}/refresh`, { method: "POST" });
+          setTimeout(loadRepos, 400);
+          setTimeout(loadRepos, 1500);
+          setTimeout(loadRepos, 3500);
+        } else if (action === "delete") {
+          const { owner, repo } = t.dataset;
+          if (!confirm(`Remove ${owner}/${repo}?`)) return;
+          await api(`/api/repos/${owner}/${repo}`, { method: "DELETE" });
+          loadRepos();
+        }
+      });
+
+      // Copy release announcement
+      function buildReleaseMarkdown() {
+        // Use the same visible+filter logic, but only repos with status "behind"
+        let visible = state.repos.filter((r) => r.status === "behind");
+        if (state.afterDate) {
+          visible = visible.filter((r) => repoHasCommitsAfter(r, state.afterDate));
+        }
+        // Sort by commitsAhead desc for visibility
+        visible.sort((a, b) => (b.commitsAhead || 0) - (a.commitsAhead || 0));
+
+        const dateForHeader = state.afterDate || new Date();
+        const header = `Dari changes dari ${fmtDateShort(dateForHeader)}, inilah service-service yang akan naik:`;
+
+        if (visible.length === 0) {
+          return `${header}\n- (tidak ada repo yang perlu di-release)\n\nConfirm apakah ada perubahan vault atau config lainnya. dan apakah dari list ini ada yang tidak perlu release?`;
+        }
+
+        const lines = visible.map(
+          (r) => `- [${r.owner}/${r.repo}](${r.url}) -> ${r.commitsAhead} commits`
+        );
+        return `${header}\n${lines.join("\n")}\n\nConfirm apakah ada perubahan vault atau config lainnya. dan apakah dari list ini ada yang tidak perlu release?`;
+      }
+
+      document.getElementById("copyReleaseBtn").addEventListener("click", async () => {
+        const md = buildReleaseMarkdown();
+        const label = document.getElementById("copyReleaseLabel");
+        try {
+          await navigator.clipboard.writeText(md);
+          label.textContent = "Copied!";
+        } catch (e) {
+          // Fallback for older browsers / non-secure contexts
+          const ta = document.createElement("textarea");
+          ta.value = md;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          try {
+            document.execCommand("copy");
+            label.textContent = "Copied!";
+          } catch (_) {
+            label.textContent = "Copy failed";
+          }
+          ta.remove();
+        }
+        setTimeout(() => (label.textContent = "Copy"), 1800);
+      });
+
+      document.getElementById("refreshAllBtn").addEventListener("click", async () => {
+        await api("/api/repos/refresh-all", { method: "POST" });
+        setTimeout(loadRepos, 600);
+        setTimeout(loadRepos, 2000);
+        setTimeout(loadRepos, 5000);
+      });
+
+      document.querySelectorAll(".filter-btn").forEach((b) => {
+        b.addEventListener("click", () => {
+          state.filter = b.dataset.filter;
+          render();
+        });
+      });
+
+      // Date filter
+      const dateInput = document.getElementById("afterDate");
+      dateInput.addEventListener("change", (e) => {
+        state.afterDate = parseDateInput(e.target.value);
+        render();
+      });
+      document.getElementById("presetWeek").addEventListener("click", () => {
+        const mon = lastMonday();
+        dateInput.value = fmtDateInput(mon);
+        state.afterDate = mon;
+        render();
+      });
+      document.getElementById("clearDate").addEventListener("click", () => {
+        dateInput.value = "";
+        state.afterDate = null;
+        render();
+      });
+
+      const modal = document.getElementById("addModal");
+      function openModal() {
+        modal.classList.remove("hidden");
+        document.getElementById("addOwner").focus();
+      }
+      function closeModal() {
+        modal.classList.add("hidden");
+        document.getElementById("addForm").reset();
+        document.getElementById("addError").classList.add("hidden");
+      }
+      document.getElementById("addRepoBtn").addEventListener("click", openModal);
+      document.getElementById("cancelAdd").addEventListener("click", closeModal);
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) closeModal();
+      });
+
+      document.getElementById("addUrl").addEventListener("input", (e) => {
+        const m = e.target.value.match(
+          /github\.com[\/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:\/|$)/
+        );
+        if (m) {
+          document.getElementById("addOwner").value = m[1];
+          document.getElementById("addRepo").value = m[2];
+        }
+      });
+
+      document.getElementById("addForm").addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const owner = document.getElementById("addOwner").value.trim();
+        const repo = document.getElementById("addRepo").value.trim();
+        const notes = document.getElementById("addNotes").value.trim();
+        const errEl = document.getElementById("addError");
+        errEl.classList.add("hidden");
+        try {
+          await api("/api/repos", {
+            method: "POST",
+            body: JSON.stringify({ owner, repo, notes }),
+          });
+          closeModal();
+          loadRepos();
+          setTimeout(loadRepos, 1500);
+          setTimeout(loadRepos, 4000);
+        } catch (err) {
+          errEl.textContent = err.message || "Failed to add repo";
+          errEl.classList.remove("hidden");
+        }
+      });
+
+      document.addEventListener("keydown", (e) => {
+        if (e.target.tagName === "INPUT") return;
+        if (e.key === "r") document.getElementById("refreshAllBtn").click();
+        else if (e.key === "a") openModal();
+        else if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+      });
+
+      loadMeta();
+      loadRepos();
+      setInterval(loadRepos, 5000);
+    </script>
+  </body>
+</html>

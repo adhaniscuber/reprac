@@ -11,6 +11,7 @@ import (
 	"github.com/adhaniscuber/reprac/internal/github"
 	"github.com/adhaniscuber/reprac/internal/ui/components"
 	"github.com/adhaniscuber/reprac/internal/ui/styles"
+	"github.com/adhaniscuber/reprac/internal/web"
 	"github.com/charmbracelet/bubbles/spinner"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -58,6 +59,7 @@ type Model struct {
 	noAuth     bool
 	filterMode int
 	version    string
+	webURL     string
 }
 
 func New(cfgPath string, cfg *config.Config, gh *github.Client, version string) Model {
@@ -259,6 +261,19 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			_ = openBrowser(url)
 		}
 
+	case "w":
+		if m.webURL == "" {
+			srv := web.NewServer(m.cfgPath, m.cfg, m.gh, m.version)
+			url, _, _, err := srv.Start(context.Background(), web.DefaultPort)
+			if err != nil {
+				m.statusMsg = "web: " + err.Error()
+				return m, nil
+			}
+			m.webURL = url
+		}
+		_ = openBrowser(m.webURL)
+		m.statusMsg = "web UI: " + m.webURL
+
 	case "f":
 		m.filterMode = (m.filterMode + 1) % 4
 		m.cursor = 0
@@ -276,7 +291,7 @@ func (m Model) handleKey(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 
 	case "?":
 		// Toggle help via statusMsg
-		m.statusMsg = "enter/space=expand  E=expand all  C=collapse all  r=refresh  a=add  d=delete  o=browser  f=filter  ←→=scroll  j/k=move  q=quit"
+		m.statusMsg = "enter/space=expand  E=expand all  C=collapse all  r=refresh  a=add  d=delete  o=browser  w=web UI  f=filter  ←→=scroll  j/k=move  q=quit"
 	}
 
 	return m, nil
@@ -458,8 +473,13 @@ func rowHeight(key string, expanded bool, results map[string]*github.RepoStatus)
 	if res == nil || res.Status != github.StatusBehind || len(res.Commits) == 0 {
 		return 1
 	}
-	h := 1 + len(res.Commits) // header + commit lines
-	if res.CommitsAhead > len(res.Commits) {
+	const tuiMaxCommits = 5
+	shown := len(res.Commits)
+	if shown > tuiMaxCommits {
+		shown = tuiMaxCommits
+	}
+	h := 1 + shown // header + commit lines
+	if res.CommitsAhead > shown {
 		h++ // "+N more commits" line
 	}
 	return h

@@ -118,7 +118,12 @@ func RenderRow(
 	gap := strings.Repeat(" ", colGap)
 
 	lines := []string{header}
-	for _, c := range status.Commits {
+	const tuiMaxCommits = 5
+	commits := status.Commits
+	if len(commits) > tuiMaxCommits {
+		commits = commits[:tuiMaxCommits]
+	}
+	for _, c := range commits {
 		dateStr := ""
 		if !c.Date.IsZero() {
 			dateStr = c.Date.Local().Format("15:04:05 02-Jan-06")
@@ -135,8 +140,8 @@ func RenderRow(
 	}
 
 	// "+N more commits" if needed
-	if status.CommitsAhead > len(status.Commits) {
-		more := status.CommitsAhead - len(status.Commits)
+	if status.CommitsAhead > len(commits) {
+		more := status.CommitsAhead - len(commits)
 		moreLine := indentStyle.Width(termWidth).Render(
 			pad + moreStyle.Render(fmt.Sprintf("+ %d more commits...", more)),
 		)

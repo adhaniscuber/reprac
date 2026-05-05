@@ -1,17 +1,27 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"os/exec"
+	"os/signal"
+	"runtime"
+	"syscall"
 
 	"github.com/adhaniscuber/reprac/internal/config"
 	"github.com/adhaniscuber/reprac/internal/github"
 	"github.com/adhaniscuber/reprac/internal/ui"
+	"github.com/adhaniscuber/reprac/internal/web"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/spf13/cobra"
 )
 
-var cfgPath string
+var (
+	cfgPath   string
+	webNoOpen bool
+	webPort   int
+)
 
 // Version is set at build time via -ldflags.
 var Version = "dev"
@@ -67,6 +77,33 @@ var initCmd = &cobra.Command{
 	},
 }
 
+var webCmd = &cobra.Command{
+	Use:   "web",
+	Short: "Run the web UI (shadcn-styled) instead of the TUI",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		cfg, err := config.Load(cfgPath)
+		if err != nil {
+			return err
+		}
+		gh := github.New()
+		srv := web.NewServer(cfgPath, cfg, gh, Version)
+
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer cancel()
+
+		url, wait, _, err := srv.Start(ctx, webPort)
+		if err != nil {
+			return fmt.Errorf("starting server: %w", err)
+		}
+		fmt.Printf("✨ reprac web UI: %s\n", url)
+		fmt.Println("   press Ctrl+C to stop")
+		if !webNoOpen {
+			_ = openBrowserURL(url)
+		}
+		return wait()
+	},
+}
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print version",
@@ -84,6 +121,22 @@ func Execute() {
 func init() {
 	defaultCfg := config.DefaultPath()
 	rootCmd.PersistentFlags().StringVarP(&cfgPath, "config", "c", defaultCfg, "path to repos.yaml config file")
+	webCmd.Flags().BoolVar(&webNoOpen, "no-open", false, "do not auto-open the browser")
+	webCmd.Flags().IntVarP(&webPort, "port", "p", web.DefaultPort, "port to bind (0 = random; falls back to random if busy)")
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(versionCmd)
+	rootCmd.AddCommand(webCmd)
+}
+
+func openBrowserURL(url string) error {
+	var name string
+	switch runtime.GOOS {
+	case "darwin":
+		name = "open"
+	case "windows":
+		name = "start"
+	default:
+		name = "xdg-open"
+	}
+	return exec.Command(name, url).Start()
 }
