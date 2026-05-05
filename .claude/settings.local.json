@@ -9,7 +9,11 @@
       "Bash(gh auth status)",
       "Bash(ls -la \"/Users/cyuber/project/deploy-tracker/{cmd,internal\")",
       "Bash(go build ./...)",
-      "Bash(git rm -r --cached .claude/)"
+      "Bash(git rm -r --cached .claude/)",
+      "Bash(go run . init)",
+      "Bash(go vet *)",
+      "Bash(go build *)",
+      "Bash(/tmp/reprac-test --help)"
     ]
   }
 }
