@@ -186,6 +186,7 @@ type commitView struct {
 	SHA     string    `json:"sha"`
 	Message string    `json:"message"`
 	Date    time.Time `json:"date"`
+	Author  string    `json:"author,omitempty"`
 }
 
 func (s *Server) listRepos(w http.ResponseWriter, _ *http.Request) {
@@ -217,7 +218,7 @@ func (s *Server) listRepos(w http.ResponseWriter, _ *http.Request) {
 			lc := res.LastChecked
 			v.LastChecked = &lc
 			for _, c := range res.Commits {
-				v.Commits = append(v.Commits, commitView{SHA: c.SHA, Message: c.Message, Date: c.Date})
+				v.Commits = append(v.Commits, commitView{SHA: c.SHA, Message: c.Message, Date: c.Date, Author: c.Author})
 			}
 		} else {
 			v.Status = "unknown"

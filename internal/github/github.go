@@ -16,6 +16,7 @@ type CommitInfo struct {
 	SHA     string    // 7-char short SHA
 	Message string    // first line of commit message
 	Date    time.Time // author date
+	Author  string    // GitHub login of the commit author (may be empty)
 }
 
 // RepoStatus holds the computed deploy status for a repo.
@@ -291,6 +292,9 @@ func (c *Client) compareCommits(ctx context.Context, owner, repo, base, head str
 					Date time.Time `json:"date"`
 				} `json:"author"`
 			} `json:"commit"`
+			Author *struct {
+				Login string `json:"login"`
+			} `json:"author"`
 		} `json:"commits"`
 	}
 	path := fmt.Sprintf("/repos/%s/%s/compare/%s...%s", owner, repo, base, head)
@@ -311,7 +315,11 @@ func (c *Client) compareCommits(ctx context.Context, owner, repo, base, head str
 		if idx := strings.Index(msg, "\n"); idx != -1 {
 			msg = msg[:idx]
 		}
-		commits[len(all)-1-i] = CommitInfo{SHA: sha, Message: msg, Date: c.Commit.Author.Date}
+		login := ""
+		if c.Author != nil {
+			login = c.Author.Login
+		}
+		commits[len(all)-1-i] = CommitInfo{SHA: sha, Message: msg, Date: c.Commit.Author.Date, Author: login}
 	}
 
 	return cmp.AheadBy, commits, nil

@@ -1,649 +1,711 @@
 <!doctype html>
-<html lang="en" class="dark">
+<html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>reprac · track unreleased changes</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>REPRAC HQ · LIVE</title>
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@200;300&family=JetBrains+Mono:wght@200;300&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@200;300;400&family=JetBrains+Mono:wght@200;300;400&display=swap"
       rel="stylesheet"
     />
-    <script>
-      tailwind.config = {
-        darkMode: "class",
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ["Geist Mono", "JetBrains Mono", "ui-monospace", "monospace"],
-              mono: ["Geist Mono", "JetBrains Mono", "ui-monospace", "monospace"],
-            },
-            colors: {
-              border: "hsl(var(--border))",
-              input: "hsl(var(--input))",
-              ring: "hsl(var(--ring))",
-              background: "hsl(var(--background))",
-              foreground: "hsl(var(--foreground))",
-              primary: {
-                DEFAULT: "hsl(var(--primary))",
-                foreground: "hsl(var(--primary-foreground))",
-              },
-              secondary: {
-                DEFAULT: "hsl(var(--secondary))",
-                foreground: "hsl(var(--secondary-foreground))",
-              },
-              muted: {
-                DEFAULT: "hsl(var(--muted))",
-                foreground: "hsl(var(--muted-foreground))",
-              },
-              accent: {
-                DEFAULT: "hsl(var(--accent))",
-                foreground: "hsl(var(--accent-foreground))",
-              },
-              destructive: {
-                DEFAULT: "hsl(var(--destructive))",
-                foreground: "hsl(var(--destructive-foreground))",
-              },
-              card: {
-                DEFAULT: "hsl(var(--card))",
-                foreground: "hsl(var(--card-foreground))",
-              },
-            },
-            borderRadius: {
-              lg: "var(--radius)",
-              md: "calc(var(--radius) - 2px)",
-              sm: "calc(var(--radius) - 4px)",
-            },
-          },
-        },
-      };
-    </script>
     <style>
+      /* ── Palette ──────────────────────────────────────────────── */
       :root {
-        --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 240 10% 3.9%;
-        --primary: 240 5.9% 10%;
-        --primary-foreground: 0 0% 98%;
-        --secondary: 240 4.8% 95.9%;
-        --secondary-foreground: 240 5.9% 10%;
-        --muted: 240 4.8% 95.9%;
-        --muted-foreground: 240 3.8% 46.1%;
-        --accent: 240 4.8% 95.9%;
-        --accent-foreground: 240 5.9% 10%;
-        --destructive: 0 84.2% 60.2%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 5.9% 90%;
-        --input: 240 5.9% 90%;
-        --ring: 240 5.9% 10%;
-        --radius: 0.5rem;
+        --bg: #0e1116;        /* soft slate, not pure black */
+        --bg-2: #141821;      /* panel surface */
+        --bg-3: #1a1f2a;      /* hover / inset */
+        --line: #232a36;      /* primary border */
+        --line-2: #2d3543;    /* secondary border */
+        --text: #d8dee9;      /* calm off-white */
+        --muted: #7d8799;
+        --muted-2: #565d6b;
+        --accent: #7cd1d6;    /* soft teal — corner brackets */
+        --accent-2: #b6a6e9;  /* lavender highlight */
+        --green: #8fd6a9;
+        --amber: #e8c781;
+        --red:   #e88a8a;
+        --blue:  #89b4e1;
+        --magenta: #c9a9e5;
+        --cyan:  #8fcfd8;
       }
-      .dark {
-        --background: 240 10% 3.9%;
-        --foreground: 0 0% 98%;
-        --card: 240 10% 5.5%;
-        --card-foreground: 0 0% 98%;
-        --primary: 0 0% 98%;
-        --primary-foreground: 240 5.9% 10%;
-        --secondary: 240 3.7% 15.9%;
-        --secondary-foreground: 0 0% 98%;
-        --muted: 240 3.7% 15.9%;
-        --muted-foreground: 240 5% 64.9%;
-        --accent: 240 3.7% 15.9%;
-        --accent-foreground: 0 0% 98%;
-        --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 240 3.7% 15.9%;
-        --input: 240 3.7% 15.9%;
-        --ring: 240 4.9% 83.9%;
-      }
-      body {
-        background: hsl(var(--background));
-        color: hsl(var(--foreground));
-        font-family: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
-        font-weight: 300;
-        font-feature-settings: "ss01", "cv11";
-      }
-      .mono {
-        font-family: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
-      }
-      /* Global reset — only weights 200 and 300 exist in this UI. */
+
       *,
       *::before,
-      *::after,
-      h1, h2, h3, h4, h5, h6,
-      strong, b, em, i,
-      button, input, select, textarea, code, kbd, samp,
-      .font-medium, .font-semibold, .font-bold {
-        font-weight: 300 !important;
+      *::after {
+        box-sizing: border-box;
+        font-weight: 300;
       }
-      /* Lightest weight (200) for muted / supporting text */
-      .text-muted-foreground,
-      .text-xs,
-      .filter-btn,
-      footer,
-      footer * {
-        font-weight: 200 !important;
+      html, body { background: var(--bg); color: var(--text); margin: 0; padding: 0; }
+      body {
+        font-family: "Geist Mono", "JetBrains Mono", ui-monospace, monospace;
+        font-size: 12px;
+        font-weight: 300;
+        font-feature-settings: "ss01", "cv11";
+        line-height: 1.5;
+        min-height: 100vh;
+        background:
+          radial-gradient(1100px 520px at 12% -10%, rgba(124, 209, 214, 0.05), transparent 60%),
+          radial-gradient(900px 480px at 92% 8%, rgba(182, 166, 233, 0.04), transparent 60%),
+          var(--bg);
       }
-      /* Clamp font sizes inside repo items: 10px min, 14px max */
-      #repoList article { font-size: 12px; line-height: 1.45; }
-      #repoList article * { font-size: 12px; } /* default cap for raw elements */
-      #repoList article .text-base { font-size: 14px !important; line-height: 1.4; }
-      #repoList article .text-sm   { font-size: 13px !important; line-height: 1.4; }
-      #repoList article .text-xs   { font-size: 11px !important; line-height: 1.4; }
-      #repoList article code       { font-size: 11px !important; }
-      /* Action icons (↗ ↻ ✕) — buttons/anchors default to 16px in browsers */
-      #repoList article a,
-      #repoList article button { font-size: 14px !important; line-height: 1; }
-      .filter-btn {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.875rem;
-        color: hsl(var(--muted-foreground));
-        border-bottom: 2px solid transparent;
-        margin-bottom: -1px;
+      .text-muted { color: var(--muted); font-weight: 200; }
+      .text-faint { color: var(--muted-2); font-weight: 200; }
+      .text-green { color: var(--green); }
+      .text-amber { color: var(--amber); }
+      .text-red   { color: var(--red); }
+      .text-blue  { color: var(--blue); }
+      .text-magenta { color: var(--magenta); }
+      .text-cyan  { color: var(--cyan); }
+      .uppercase { text-transform: uppercase; letter-spacing: 0.08em; }
+
+      a { color: inherit; text-decoration: none; }
+
+      /* ── Top bar ──────────────────────────────────────────────── */
+      .topbar {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        padding: 14px 24px;
+        border-bottom: 1px solid var(--line);
+      }
+      .brand {
+        display: flex; align-items: center; gap: 10px;
+        text-transform: uppercase; letter-spacing: 0.12em;
+        font-size: 12px;
+      }
+      .brand .hq { color: var(--muted); }
+      .live { color: var(--green); display: inline-flex; align-items: center; gap: 6px; font-size: 10px; }
+      .live::before {
+        content: ""; width: 6px; height: 6px; background: var(--green); border-radius: 50%;
+        box-shadow: 0 0 6px rgba(143, 214, 169, 0.45);
+        animation: pulse 1.6s ease-in-out infinite;
+      }
+      @keyframes pulse { 50% { opacity: 0.35; } }
+      .ctx {
+        color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
+      }
+      .ctx code { color: var(--text); }
+      .topbar .spacer { flex: 1; }
+      .top-btn {
+        display: inline-flex; align-items: center; gap: 8px;
+        background: transparent; color: var(--text);
+        border: 1px solid var(--line-2); padding: 6px 12px;
+        font: inherit; font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em;
         cursor: pointer;
-        background: transparent;
       }
-      .filter-btn:hover {
-        color: hsl(var(--foreground));
+      .top-btn:hover { border-color: var(--muted); }
+      .top-btn .ic { color: var(--muted); }
+      .top-btn.primary { border-color: var(--accent); color: var(--accent); }
+      .top-btn.primary:hover { background: rgba(124, 209, 214, 0.08); }
+      .pill {
+        font-size: 10px; color: var(--muted); border: 1px solid var(--line-2);
+        padding: 3px 8px; text-transform: uppercase; letter-spacing: 0.1em;
       }
-      .filter-btn.active {
-        color: hsl(var(--foreground));
-        border-bottom-color: hsl(var(--foreground));
-        font-weight: 500;
+
+      /* ── Layout ───────────────────────────────────────────────── */
+      main { padding: 20px 24px 60px; display: flex; flex-direction: column; gap: 16px; }
+
+      /* ── Bracket panel ────────────────────────────────────────── */
+      .panel {
+        position: relative;
+        border: 1px solid var(--line);
+        background: var(--bg-2);
+        padding: 14px 16px;
+      }
+      .panel > .c {
+        position: absolute; width: 10px; height: 10px;
+        border: 0 solid var(--accent);
+      }
+      .panel > .c-tl { top: -1px; left: -1px;  border-top-width: 1px; border-left-width: 1px; }
+      .panel > .c-tr { top: -1px; right: -1px; border-top-width: 1px; border-right-width: 1px; }
+      .panel > .c-bl { bottom: -1px; left: -1px;  border-bottom-width: 1px; border-left-width: 1px; }
+      .panel > .c-br { bottom: -1px; right: -1px; border-bottom-width: 1px; border-right-width: 1px; }
+      .panel-head {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 12px;
+      }
+      .pid {
+        color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      .pid b { color: var(--text); font-weight: 300; }
+      .panel-title {
+        font-size: 11px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--text);
+      }
+      .panel-meta { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+
+      /* ── Metrics grid ─────────────────────────────────────────── */
+      .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+      .metric { padding: 16px; min-height: 110px; display: flex; flex-direction: column; }
+      .m-row { display: flex; justify-content: space-between; align-items: baseline; }
+      .m-id { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+      .m-label { color: var(--muted); font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; }
+      .m-value { font-size: 36px; font-weight: 300; line-height: 1.1; margin-top: 8px; }
+      .m-value .unit { font-size: 12px; color: var(--muted); margin-left: 6px; letter-spacing: 0.12em; text-transform: uppercase; }
+      .m-sub { margin-top: auto; padding-top: 10px; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.12em; }
+      .m-bar { margin-top: 8px; height: 2px; background: var(--line); position: relative; }
+      .m-bar > span { display: block; height: 100%; }
+
+      /* ── Filter panel ─────────────────────────────────────────── */
+      .filter-row { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+      .filter-row + .filter-row { border-top: 1px dashed var(--line); }
+      .row-label {
+        width: 80px; color: var(--muted); font-size: 10px;
+        text-transform: uppercase; letter-spacing: 0.14em;
+      }
+      .seg {
+        display: inline-flex; gap: 0; border: 1px solid var(--line-2);
+      }
+      .seg button {
+        background: transparent; color: var(--muted); border: 0;
+        border-right: 1px solid var(--line-2);
+        padding: 5px 12px; font: inherit; font-size: 10px;
+        text-transform: uppercase; letter-spacing: 0.12em;
+        cursor: pointer;
+      }
+      .seg button:last-child { border-right: 0; }
+      .seg button:hover { color: var(--text); }
+      .seg button.active { background: var(--text); color: var(--bg); }
+      .date-input {
+        background: transparent; color: var(--text);
+        border: 1px solid var(--line-2); padding: 5px 10px;
+        font: inherit; font-size: 11px;
+        color-scheme: dark;
+      }
+      .ghost-btn {
+        background: transparent; color: var(--muted); border: 1px solid var(--line-2);
+        padding: 5px 10px; font: inherit; font-size: 10px; cursor: pointer;
+        text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      .ghost-btn:hover { color: var(--text); border-color: var(--muted); }
+
+      /* ── Repo rows ────────────────────────────────────────────── */
+      .repo-row {
+        display: grid;
+        grid-template-columns: 28px 18px 1fr 96px 1fr 152px;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 4px;
+        border-top: 1px dashed var(--line);
+        font-size: 12px;
+      }
+      .repo-row:first-child { border-top: 0; }
+      .repo-row.row-hover:hover { background: var(--bg-3); }
+      .repo-row .rid { color: var(--muted); font-size: 10px; letter-spacing: 0.1em; }
+      .repo-row .dot {
+        width: 8px; height: 8px; border-radius: 0; display: inline-block;
+      }
+      .repo-row .dot.behind { background: var(--amber); box-shadow: 0 0 6px rgba(232, 199, 129, 0.35); }
+      .repo-row .dot.clean  { background: var(--green); }
+      .repo-row .dot.no_release { background: var(--blue); }
+      .repo-row .dot.error  { background: var(--red); }
+      .repo-row .dot.loading{ background: var(--muted); animation: pulse 1.2s ease-in-out infinite; }
+      .repo-row .dot.unknown{ background: var(--muted-2); }
+      .repo-row .name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+      .repo-row .name .repo { color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .repo-row .name .notes { color: var(--muted); font-size: 10px; padding-left: 8px; border-left: 1px solid var(--line-2); }
+      .repo-row .ahead {
+        text-align: right; font-variant-numeric: tabular-nums;
+      }
+      .repo-row .ahead .n { color: var(--text); font-size: 13px; }
+      .repo-row .ahead .l { color: var(--muted); font-size: 9px; text-transform: uppercase; letter-spacing: 0.14em; margin-left: 4px; }
+      .repo-row .meta {
+        display: flex; align-items: center; gap: 10px;
+        color: var(--muted); font-size: 10px; min-width: 0;
+        overflow: hidden;
+      }
+      .repo-row .meta .k { color: var(--muted-2); text-transform: uppercase; letter-spacing: 0.1em; margin-right: 4px; }
+      .repo-row .meta .v { color: var(--text); }
+      .repo-row .meta .sep::before { content: "·"; color: var(--muted-2); padding: 0 6px; }
+      .repo-row .actions { display: flex; justify-content: flex-end; gap: 4px; }
+      .icon-btn {
+        width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center;
+        background: transparent; color: var(--muted);
+        border: 1px solid transparent; border-radius: 2px;
+        cursor: pointer;
+        font: inherit; font-size: 15px;
+        transition: color 120ms ease, border-color 120ms ease, background 120ms ease;
+      }
+      .icon-btn:hover { color: var(--text); border-color: var(--line-2); background: var(--bg-3); }
+      .icon-btn.danger:hover { color: var(--red); border-color: var(--red); }
+
+      .commits {
+        grid-column: 1 / -1;
+        margin-top: 6px; padding: 8px 0 8px 46px;
+        border-top: 1px dashed var(--line);
+        max-height: 28rem; overflow-y: auto;
+      }
+      .commit-row { display: grid; grid-template-columns: 64px 1fr 160px; gap: 14px; padding: 3px 0; }
+      .commit-row code { color: var(--muted); font-size: 10px; }
+      .commit-row .msg { color: var(--text); font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .commit-row .commit-author { color: var(--muted); font-size: 10px; text-decoration: none; margin-left: 6px; }
+      .commit-row .commit-author:hover { color: var(--accent); }
+      .commit-row .date { color: var(--muted-2); font-size: 10px; text-align: right; }
+      .commits-more { color: var(--muted-2); font-size: 10px; padding: 6px 0 0; font-style: italic; }
+
+      /* Scrollbar */
+      .commits::-webkit-scrollbar { width: 6px; }
+      .commits::-webkit-scrollbar-thumb { background: var(--line-2); }
+      .commits::-webkit-scrollbar-track { background: transparent; }
+
+      /* ── Status banner ────────────────────────────────────────── */
+      .warn-bar {
+        border: 1px solid var(--red); color: var(--red);
+        padding: 8px 12px; font-size: 11px;
+        text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      .warn-bar code { color: var(--text); padding: 0 4px; }
+
+      .empty {
+        text-align: center; color: var(--muted-2);
+        padding: 40px 0; font-size: 11px;
+        text-transform: uppercase; letter-spacing: 0.12em;
+      }
+
+      /* ── Modal ────────────────────────────────────────────────── */
+      .modal-bg {
+        position: fixed; inset: 0;
+        background: rgba(14, 17, 22, 0.72);
+        backdrop-filter: blur(6px);
+        display: none; align-items: center; justify-content: center; z-index: 50;
+      }
+      .modal-bg.open { display: flex; }
+      .modal {
+        width: 100%; max-width: 480px; padding: 20px 22px;
+      }
+      .modal h2 {
+        margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em;
+      }
+      .modal .sub { color: var(--muted); font-size: 11px; margin-bottom: 16px; }
+      .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+      .field label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.14em; }
+      .field input {
+        background: transparent; color: var(--text);
+        border: 1px solid var(--line-2); padding: 7px 10px; font: inherit; font-size: 12px;
+      }
+      .field input:focus { outline: none; border-color: var(--accent); }
+      .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .err {
+        border: 1px solid var(--red); color: var(--red);
+        padding: 6px 10px; font-size: 11px; margin-bottom: 12px; display: none;
+      }
+      .err.show { display: block; }
+      .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+
+      /* ── Footer ───────────────────────────────────────────────── */
+      footer {
+        margin-top: 8px; padding: 14px 24px;
+        border-top: 1px solid var(--line);
+        display: flex; justify-content: space-between;
+        font-size: 10px; color: var(--muted);
+        text-transform: uppercase; letter-spacing: 0.12em;
+      }
+      footer .keys b { color: var(--text); padding: 0 3px; }
+
+      /* Responsive */
+      @media (max-width: 1100px) {
+        .metrics { grid-template-columns: repeat(2, 1fr); }
+      }
+      @media (max-width: 720px) {
+        .metrics { grid-template-columns: 1fr; }
+        .repo-row { grid-template-columns: 1fr; gap: 4px; }
+        .repo-row .actions { justify-content: flex-start; }
+        .commits { padding-left: 0; }
       }
     </style>
   </head>
-  <body class="min-h-screen">
-    <div class="mx-auto max-w-6xl px-6 py-8">
-      <header class="flex items-end justify-between mb-8 flex-wrap gap-4">
-        <div>
-          <h1 class="text-3xl font-bold tracking-tight flex items-center gap-3">
-            <span class="mono text-primary">reprac</span>
-            <span
-              id="version"
-              class="text-xs text-muted-foreground mono font-normal px-2 py-0.5 rounded border border-border"
-              >dev</span
-            >
-          </h1>
-          <p class="text-sm text-muted-foreground mt-1">
-            track unreleased GitHub repository changes · never forget to deploy again
-          </p>
-        </div>
-        <div class="flex items-center gap-2">
-          <button
-            id="copyReleaseBtn"
-            title="Copy release announcement (markdown)"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-border bg-card hover:bg-accent h-9 px-4 py-2"
-          >
-            <span class="mono mr-2">⧉</span> <span id="copyReleaseLabel">Copy</span>
-          </button>
-          <button
-            id="refreshAllBtn"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-border bg-card hover:bg-accent h-9 px-4 py-2"
-          >
-            <span class="mono mr-2">↻</span> Refresh all
-          </button>
-          <button
-            id="addRepoBtn"
-            class="inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
-          >
-            <span class="mr-1">+</span> Add repo
-          </button>
-        </div>
-      </header>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span>REPRAC <span class="hq">HQ</span></span>
+        <span class="live">LIVE</span>
+      </div>
+      <div class="ctx">TRACKING <code id="ovTotal2">0</code> REPOS · UNRELEASED CHANGES</div>
+      <div class="spacer"></div>
+      <button id="copyReleaseBtn" class="top-btn" title="Copy markdown release announcement">
+        <span class="ic">⧉</span><span id="copyReleaseLabel">COPY</span>
+      </button>
+      <button id="refreshAllBtn" class="top-btn" title="Refresh all (r)">
+        <span class="ic">↻</span> SYNC
+      </button>
+      <button id="addRepoBtn" class="top-btn primary" title="Add repo (a)">
+        <span class="ic">+</span> ADD
+      </button>
+      <span class="pill" id="version">DEV</span>
+    </header>
 
-      <div
-        id="authWarn"
-        class="hidden mb-4 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive-foreground p-4 text-sm"
-      >
-        <span class="font-medium">⚠ no GitHub auth detected.</span>
-        Set <code class="mono px-1 py-0.5 rounded bg-destructive/20">GITHUB_TOKEN</code>
-        or run <code class="mono px-1 py-0.5 rounded bg-destructive/20">gh auth login</code>.
+    <main>
+      <div id="authWarn" class="warn-bar" style="display:none">
+        ⚠ NO GITHUB AUTH · SET <code>GITHUB_TOKEN</code> OR RUN <code>GH AUTH LOGIN</code>
       </div>
 
-      <section class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div class="rounded-lg border border-border bg-card p-4">
-          <div class="text-xs uppercase tracking-wider text-muted-foreground">need deploy</div>
-          <div id="ovPending" class="text-3xl font-bold mt-1 text-amber-400 mono">0</div>
+      <!-- ── Metrics ── -->
+      <section class="metrics" id="metrics">
+        <div class="panel metric" data-metric="behind">
+          <i class="c c-tl"></i><i class="c c-tr"></i><i class="c c-bl"></i><i class="c c-br"></i>
+          <div class="m-row"><div class="m-id">M01</div><div class="m-label">Need deploy</div></div>
+          <div class="m-value text-amber"><span id="ovPending">0</span><span class="unit">repos</span></div>
+          <div class="m-bar"><span class="bg-amber" id="barPending"></span></div>
+          <div class="m-sub" id="ovPendingSub">— behind release</div>
         </div>
-        <div class="rounded-lg border border-border bg-card p-4">
-          <div class="text-xs uppercase tracking-wider text-muted-foreground">up to date</div>
-          <div id="ovClean" class="text-3xl font-bold mt-1 text-emerald-400 mono">0</div>
+        <div class="panel metric" data-metric="clean">
+          <i class="c c-tl"></i><i class="c c-tr"></i><i class="c c-bl"></i><i class="c c-br"></i>
+          <div class="m-row"><div class="m-id">M02</div><div class="m-label">Up to date</div></div>
+          <div class="m-value text-green"><span id="ovClean">0</span><span class="unit">repos</span></div>
+          <div class="m-bar"><span class="bg-green" id="barClean"></span></div>
+          <div class="m-sub" id="ovCleanSub">— shipped</div>
         </div>
-        <div class="rounded-lg border border-border bg-card p-4">
-          <div class="text-xs uppercase tracking-wider text-muted-foreground">no release</div>
-          <div id="ovNoRelease" class="text-3xl font-bold mt-1 text-sky-400 mono">0</div>
+        <div class="panel metric" data-metric="no_release">
+          <i class="c c-tl"></i><i class="c c-tr"></i><i class="c c-bl"></i><i class="c c-br"></i>
+          <div class="m-row"><div class="m-id">M03</div><div class="m-label">No release</div></div>
+          <div class="m-value text-blue"><span id="ovNoRelease">0</span><span class="unit">repos</span></div>
+          <div class="m-bar"><span class="bg-blue" id="barNoRelease"></span></div>
+          <div class="m-sub">— never tagged</div>
         </div>
-        <div class="rounded-lg border border-border bg-card p-4">
-          <div class="text-xs uppercase tracking-wider text-muted-foreground">total</div>
-          <div id="ovTotal" class="text-3xl font-bold mt-1 mono">0</div>
+        <div class="panel metric">
+          <i class="c c-tl"></i><i class="c c-tr"></i><i class="c c-bl"></i><i class="c c-br"></i>
+          <div class="m-row"><div class="m-id">M04</div><div class="m-label">Tracked</div></div>
+          <div class="m-value"><span id="ovTotal">0</span><span class="unit">total</span></div>
+          <div class="m-bar"><span style="background: var(--text); width: 100%" id="barTotal"></span></div>
+          <div class="m-sub" id="ovLastSync">— synced</div>
         </div>
       </section>
 
-      <div class="flex items-center justify-between gap-3 mb-4 border-b border-border flex-wrap">
-        <div class="flex items-center gap-1">
-          <button data-filter="all" class="filter-btn">All</button>
-          <button data-filter="behind" class="filter-btn">Need deploy</button>
-          <button data-filter="clean" class="filter-btn">Up to date</button>
-          <button data-filter="no_release" class="filter-btn">No release</button>
+      <!-- ── Filters ── -->
+      <section class="panel">
+        <i class="c c-tl"></i><i class="c c-tr"></i><i class="c c-bl"></i><i class="c c-br"></i>
+        <div class="panel-head">
+          <div class="pid"><b>D01</b> · Filters</div>
+          <div class="panel-meta" id="filterCount">— shown</div>
         </div>
-        <div class="flex items-center gap-2 pb-2">
-          <label for="afterDate" class="text-xs text-muted-foreground">
-            Changes after
-          </label>
-          <input
-            id="afterDate"
-            type="date"
-            class="mono h-8 rounded-md border border-input bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <button
-            id="presetWeek"
-            type="button"
-            title="Last Monday"
-            class="h-8 px-2 rounded-md border border-border bg-card hover:bg-accent text-xs"
-          >
-            Mon
-          </button>
-          <button
-            id="clearDate"
-            type="button"
-            title="Clear date filter"
-            class="hidden h-8 w-8 inline-flex items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
-          >
-            ✕
-          </button>
-        </div>
-      </div>
-      <div
-        id="dateFilterStatus"
-        class="hidden mb-3 text-xs text-muted-foreground flex items-center gap-2"
-      >
-        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 mono">
-          📅 <span id="dateFilterLabel"></span>
-        </span>
-        <span id="dateFilterCount"></span>
-      </div>
-
-      <section id="repoList" class="space-y-2"></section>
-
-      <p
-        id="emptyState"
-        class="hidden text-center text-muted-foreground py-12 text-sm"
-      >
-        No repositories tracked. Click <span class="font-medium">Add repo</span> to get started.
-      </p>
-
-      <footer class="mt-10 pt-6 border-t border-border text-xs text-muted-foreground flex items-center justify-between">
-        <span>reprac · web view · press <code class="mono">a</code> to add · <code class="mono">r</code> to refresh</span>
-        <span class="mono" id="lastSync"></span>
-      </footer>
-    </div>
-
-    <div
-      id="addModal"
-      class="hidden fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4"
-    >
-      <div class="w-full max-w-md rounded-lg border border-border bg-card p-6 shadow-2xl">
-        <h2 class="text-lg font-semibold mb-1">Add repository</h2>
-        <p class="text-sm text-muted-foreground mb-4">
-          Paste a GitHub URL or fill the fields manually.
-        </p>
-        <form id="addForm" class="space-y-3">
-          <div>
-            <label class="text-sm font-medium">Paste URL</label>
-            <input
-              id="addUrl"
-              type="text"
-              placeholder="https://github.com/owner/repo"
-              class="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+        <div class="filter-row">
+          <span class="row-label">Status</span>
+          <div class="seg" id="filterSeg">
+            <button data-filter="all" class="active">All</button>
+            <button data-filter="behind">Need deploy</button>
+            <button data-filter="clean">Up to date</button>
+            <button data-filter="no_release">No release</button>
           </div>
-          <div class="grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-sm font-medium">Owner</label>
-              <input
-                id="addOwner"
-                type="text"
-                required
-                class="mono mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+        </div>
+        <div class="filter-row">
+          <span class="row-label">After</span>
+          <input id="afterDate" type="date" class="date-input" />
+          <button id="presetWeek" class="ghost-btn" title="Last Monday">Mon</button>
+          <button id="clearDate" class="ghost-btn" style="display:none">Clear</button>
+          <span id="dateFilterLabel" class="text-faint" style="font-size:10px; text-transform:uppercase; letter-spacing:0.12em;"></span>
+        </div>
+      </section>
+
+      <!-- ── Repositories ── -->
+      <section class="panel" id="reposPanel">
+        <i class="c c-tl"></i><i class="c c-tr"></i><i class="c c-bl"></i><i class="c c-br"></i>
+        <div class="panel-head">
+          <div class="pid"><b>D02</b> · Repositories</div>
+          <div class="panel-meta"><span id="visibleCount">0</span> · sorted by status</div>
+        </div>
+        <div id="repoList"></div>
+        <div id="emptyState" class="empty" style="display:none">No repos · press [a] to add</div>
+      </section>
+    </main>
+
+    <footer>
+      <div class="keys">
+        Keys · <b>r</b> sync · <b>a</b> add · <b>esc</b> close
+      </div>
+      <div id="lastSync">— never synced</div>
+    </footer>
+
+    <!-- ── Add modal ── -->
+    <div id="addModal" class="modal-bg">
+      <div class="panel modal">
+        <i class="c c-tl"></i><i class="c c-tr"></i><i class="c c-bl"></i><i class="c c-br"></i>
+        <h2>Add repository</h2>
+        <div class="sub">Paste a GitHub URL or fill the fields manually.</div>
+        <form id="addForm">
+          <div class="field">
+            <label>Paste URL</label>
+            <input id="addUrl" type="text" placeholder="https://github.com/owner/repo" />
+          </div>
+          <div class="field-row">
+            <div class="field">
+              <label>Owner</label>
+              <input id="addOwner" type="text" required />
             </div>
-            <div>
-              <label class="text-sm font-medium">Repo</label>
-              <input
-                id="addRepo"
-                type="text"
-                required
-                class="mono mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-              />
+            <div class="field">
+              <label>Repo</label>
+              <input id="addRepo" type="text" required />
             </div>
           </div>
-          <div>
-            <label class="text-sm font-medium">Notes</label>
-            <input
-              id="addNotes"
-              type="text"
-              class="mt-1 block w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-            />
+          <div class="field">
+            <label>Notes (optional)</label>
+            <input id="addNotes" type="text" />
           </div>
-          <div id="addError" class="hidden text-sm text-destructive-foreground bg-destructive/20 rounded px-3 py-2"></div>
-          <div class="flex justify-end gap-2 pt-2">
-            <button
-              type="button"
-              id="cancelAdd"
-              class="inline-flex items-center justify-center rounded-md text-sm font-medium border border-border bg-card hover:bg-accent h-9 px-4"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              class="inline-flex items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4"
-            >
-              Add
-            </button>
+          <div id="addError" class="err"></div>
+          <div class="modal-actions">
+            <button type="button" id="cancelAdd" class="top-btn">Cancel</button>
+            <button type="submit" class="top-btn primary">Add</button>
           </div>
         </form>
       </div>
     </div>
 
     <script>
+      // ── State ───────────────────────────────────────────────────
       const state = {
         repos: [],
         filter: "all",
         expanded: new Set(),
-        afterDate: null, // Date instance or null (start of selected day, local tz)
+        afterDate: null,
       };
 
-      // ── Date filter helpers ───────────────────────────────────────────────
-      function parseDateInput(v) {
-        // v is "YYYY-MM-DD" from <input type="date">; treat as local midnight.
-        if (!v) return null;
-        const [y, m, d] = v.split("-").map(Number);
-        if (!y || !m || !d) return null;
-        return new Date(y, m - 1, d, 0, 0, 0, 0);
-      }
-      function fmtDateInput(date) {
-        const y = date.getFullYear();
-        const m = String(date.getMonth() + 1).padStart(2, "0");
-        const d = String(date.getDate()).padStart(2, "0");
-        return `${y}-${m}-${d}`;
-      }
-      function lastMonday() {
-        const d = new Date();
-        const day = d.getDay(); // 0=Sun .. 1=Mon .. 6=Sat
-        const diff = (day === 0 ? 6 : day - 1); // days back to Monday
-        d.setDate(d.getDate() - diff);
-        d.setHours(0, 0, 0, 0);
-        return d;
-      }
-      function repoHasCommitsAfter(r, after) {
-        if (!r.commits || r.commits.length === 0) return false;
-        return r.commits.some((c) => new Date(c.date) >= after);
-      }
-
-      // safeSet: defense-in-depth — already-escaped strings are sanitized again via DOMPurify.
-      function safeSet(el, html) {
+      // ── Helpers ─────────────────────────────────────────────────
+      const $ = (s) => document.querySelector(s);
+      const safeSet = (el, html) => {
         el.innerHTML = DOMPurify.sanitize(html, { ADD_ATTR: ["target"] });
-      }
-
-      async function api(path, opts = {}) {
-        const res = await fetch(path, {
-          headers: { "Content-Type": "application/json" },
-          ...opts,
-        });
-        if (!res.ok) {
-          const text = await res.text();
-          throw new Error(text || res.statusText);
-        }
-        const ct = res.headers.get("content-type") || "";
-        return ct.includes("application/json") ? res.json() : res.text();
-      }
-
-      async function loadMeta() {
-        try {
-          const m = await api("/api/meta");
-          document.getElementById("version").textContent = m.version || "dev";
-          document.getElementById("authWarn").classList.toggle("hidden", !!m.hasAuth);
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      async function loadRepos() {
-        try {
-          state.repos = await api("/api/repos");
-          render();
-        } catch (e) {
-          console.error(e);
-        }
-      }
-
-      function escapeHtml(s) {
-        return (s || "").replace(/[&<>"']/g, (c) => ({
+      };
+      const escapeHtml = (s) =>
+        (s || "").replace(/[&<>"']/g, (c) => ({
           "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
         }[c]));
-      }
-
-      function statusBadge(r) {
-        const map = {
-          loading: ["…", "bg-muted text-muted-foreground", "checking"],
-          clean: ["✓", "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30", "up to date"],
-          behind: ["▲", "bg-amber-500/15 text-amber-400 border border-amber-500/30", `${r.commitsAhead} ahead`],
-          no_release: ["◈", "bg-sky-500/15 text-sky-400 border border-sky-500/30", "no release"],
-          error: ["✕", "bg-destructive/20 text-destructive-foreground border border-destructive/40", r.errorMsg || "error"],
-          unknown: ["·", "bg-muted text-muted-foreground", "—"],
-        };
-        const [icon, cls, label] = map[r.status] || map.unknown;
-        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium ${cls}"><span class="mono">${icon}</span>${escapeHtml(label)}</span>`;
-      }
-
-      function fmtDate(s) {
-        // dd mmm yyyy · HH:MM (24h, local tz) — used for commit timestamps
-        if (!s) return "";
-        const d = new Date(s);
-        const dd = String(d.getDate()).padStart(2, "0");
-        const hh = String(d.getHours()).padStart(2, "0");
-        const mi = String(d.getMinutes()).padStart(2, "0");
-        return `${dd} ${MONTHS[d.getMonth()]} ${d.getFullYear()} · ${hh}:${mi}`;
-      }
-
       const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-      function fmtDateShort(s) {
-        // dd mmm yyyy (e.g. "04 May 2026")
+      const fmtDateShort = (s) => {
         if (!s) return "";
         const d = new Date(s);
-        const dd = String(d.getDate()).padStart(2, "0");
-        return `${dd} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
-      }
-
-      function relTime(s) {
+        return `${String(d.getDate()).padStart(2,"0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+      };
+      const fmtDate = (s) => {
         if (!s) return "";
         const d = new Date(s);
-        const diff = Date.now() - d.getTime();
-        const m = Math.floor(diff / 60000);
+        return `${String(d.getDate()).padStart(2,"0")} ${MONTHS[d.getMonth()]} ${d.getFullYear()} · ${
+          String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`;
+      };
+      const relTime = (s) => {
+        if (!s) return "";
+        const m = Math.floor((Date.now() - new Date(s).getTime()) / 60000);
         if (m < 1) return "just now";
         if (m < 60) return `${m}m ago`;
         const h = Math.floor(m / 60);
         if (h < 24) return `${h}h ago`;
         return `${Math.floor(h / 24)}d ago`;
+      };
+      const parseDateInput = (v) => {
+        if (!v) return null;
+        const [y,m,d] = v.split("-").map(Number);
+        if (!y||!m||!d) return null;
+        return new Date(y, m-1, d, 0,0,0,0);
+      };
+      const fmtDateInput = (date) => {
+        const y = date.getFullYear();
+        return `${y}-${String(date.getMonth()+1).padStart(2,"0")}-${String(date.getDate()).padStart(2,"0")}`;
+      };
+      const lastMonday = () => {
+        const d = new Date();
+        const day = d.getDay();
+        d.setDate(d.getDate() - (day === 0 ? 6 : day - 1));
+        d.setHours(0,0,0,0);
+        return d;
+      };
+      const repoHasCommitsAfter = (r, after) =>
+        r.commits && r.commits.some((c) => new Date(c.date) >= after);
+
+      async function api(path, opts = {}) {
+        const res = await fetch(path, {
+          headers: { "Content-Type": "application/json" }, ...opts,
+        });
+        if (!res.ok) throw new Error(await res.text() || res.statusText);
+        return (res.headers.get("content-type") || "").includes("json") ? res.json() : res.text();
       }
 
-      function repoCard(r) {
+      // ── Loaders ─────────────────────────────────────────────────
+      async function loadMeta() {
+        try {
+          const m = await api("/api/meta");
+          $("#version").textContent = (m.version || "dev").toUpperCase();
+          $("#authWarn").style.display = m.hasAuth ? "none" : "block";
+        } catch (e) { console.error(e); }
+      }
+      async function loadRepos() {
+        try {
+          state.repos = await api("/api/repos");
+          render();
+        } catch (e) { console.error(e); }
+      }
+
+      // ── Repo row template ───────────────────────────────────────
+      function statusDotLabel(r) {
+        switch (r.status) {
+          case "behind":     return ["▲", "AHEAD", "amber"];
+          case "clean":      return ["✓", "CLEAN", "green"];
+          case "no_release": return ["◈", "NO REL", "blue"];
+          case "loading":    return ["…", "CHK",   "muted"];
+          case "error":      return ["✕", "ERR",   "red"];
+          default:           return ["·", "—",     "muted"];
+        }
+      }
+
+      function commitsHtml(r) {
+        if (!r.commits || !r.commits.length) return "";
+        const rows = r.commits
+          .map((c) => {
+            const by = c.author
+              ? ` <a class="commit-author" href="https://github.com/${encodeURIComponent(c.author)}" target="_blank" rel="noopener">by @${escapeHtml(c.author)}</a>`
+              : "";
+            return `
+            <div class="commit-row">
+              <code>${escapeHtml(c.sha)}</code>
+              <div class="msg">${escapeHtml(c.message)}${by}</div>
+              <div class="date">${escapeHtml(fmtDate(c.date))}</div>
+            </div>`;
+          })
+          .join("");
+        const truncated =
+          r.commitsAhead > r.commits.length
+            ? `<div class="commits-more">+ ${r.commitsAhead - r.commits.length} older commits not shown by GitHub</div>`
+            : "";
+        return `<div class="commits">${rows}${truncated}</div>`;
+      }
+
+      function repoRow(r, idx) {
         const key = r.owner + "/" + r.repo;
         const open = state.expanded.has(key);
         const canExpand = r.status === "behind" && r.commits && r.commits.length > 0;
+        const [icon, , dotCls] = statusDotLabel(r);
 
-        let commitsHtml = "";
-        if (open && canExpand) {
-          // max-h ≈ 10 rows; each row ~2.6rem with gap. Scroll vertically.
-          const truncated = r.commitsAhead > r.commits.length;
-          commitsHtml = `
-            <div class="mt-3 pt-3 border-t border-border">
-              <div class="space-y-1.5 overflow-y-auto pr-1" style="max-height: 28rem;">
-                ${r.commits
-                  .map(
-                    (c) => `
-                  <div class="flex items-start gap-3 text-sm py-0.5">
-                    <code class="mono text-xs px-1.5 py-0.5 rounded bg-muted text-muted-foreground shrink-0">${escapeHtml(c.sha)}</code>
-                    <div class="flex-1 min-w-0">
-                      <div class="truncate">${escapeHtml(c.message)}</div>
-                      <div class="text-xs text-muted-foreground">${escapeHtml(fmtDate(c.date))}</div>
-                    </div>
-                  </div>`
-                  )
-                  .join("")}
-              </div>
-              ${
-                truncated
-                  ? `<div class="text-xs text-muted-foreground pl-2 pt-2 italic">+ ${r.commitsAhead - r.commits.length} older commits not shown by GitHub</div>`
-                  : ""
-              }
-            </div>`;
-        }
+        const ahead = r.status === "behind"
+          ? `<span class="n text-amber">${r.commitsAhead}</span><span class="l">ahead</span>`
+          : r.status === "clean"
+            ? `<span class="n text-green">─</span><span class="l">match</span>`
+            : r.status === "no_release"
+              ? `<span class="n text-blue">∅</span><span class="l">no rel</span>`
+              : r.status === "error"
+                ? `<span class="n text-red">!</span><span class="l">err</span>`
+                : `<span class="n">·</span><span class="l">—</span>`;
 
-        const refLabel = r.tagName
-          ? `<span class="text-xs text-muted-foreground">${escapeHtml(r.refType || "ref")}: <code class="mono text-foreground">${escapeHtml(r.tagName)}</code>${
-              r.refDate
-                ? ` <span class="text-muted-foreground">· ${escapeHtml(fmtDateShort(r.refDate))}</span>`
-                : ""
-            }</span>`
+        const branch = r.branch
+          ? `<span><span class="k">br</span><span class="v">${escapeHtml(r.branch)}</span></span>`
           : "";
-        const branchLabel = r.branch
-          ? `<span class="text-xs text-muted-foreground">branch: <code class="mono text-foreground">${escapeHtml(r.branch)}</code></span>`
+        const ref = r.tagName
+          ? `<span class="${branch ? "sep" : ""}"><span class="k">${escapeHtml(r.refType || "ref")}</span><span class="v">${escapeHtml(r.tagName)}</span></span>`
           : "";
+        const refDate = r.refDate
+          ? `<span class="sep text-faint">${escapeHtml(fmtDateShort(r.refDate))}</span>`
+          : "";
+        const errMsg = r.status === "error" && r.errorMsg
+          ? `<span class="text-red">${escapeHtml(r.errorMsg)}</span>`
+          : "";
+
+        const ridStr = "R" + String(idx + 1).padStart(2, "0");
 
         return `
-          <article class="rounded-lg border border-border bg-card hover:border-foreground/20 transition-colors">
-            <div
-              class="p-4 ${canExpand ? "cursor-pointer" : ""}"
-              data-action="${canExpand ? "toggle" : ""}"
-              data-key="${escapeHtml(key)}"
-            >
-              <div class="flex items-start justify-between gap-4 flex-wrap">
-                <div class="min-w-0 flex-1">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <h3 class="text-base font-semibold mono truncate">${escapeHtml(key)}</h3>
-                    ${statusBadge(r)}
-                  </div>
-                  ${
-                    r.notes
-                      ? `<p class="text-sm text-muted-foreground mt-1">${escapeHtml(r.notes)}</p>`
-                      : ""
-                  }
-                  <div class="flex items-center gap-4 mt-2 flex-wrap">
-                    ${branchLabel}
-                    ${refLabel}
-                    ${
-                      r.lastChecked
-                        ? `<span class="text-xs text-muted-foreground">checked ${escapeHtml(relTime(r.lastChecked))}</span>`
-                        : ""
-                    }
-                  </div>
-                </div>
-                <div class="flex items-center gap-1 shrink-0" data-action="stop">
-                  <a
-                    href="${escapeHtml(r.url)}"
-                    target="_blank"
-                    rel="noopener"
-                    title="Open on GitHub"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground"
-                  >↗</a>
-                  <button
-                    title="Refresh"
-                    data-action="refresh"
-                    data-owner="${escapeHtml(r.owner)}"
-                    data-repo="${escapeHtml(r.repo)}"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent text-muted-foreground hover:text-foreground mono"
-                  >↻</button>
-                  <button
-                    title="Remove"
-                    data-action="delete"
-                    data-owner="${escapeHtml(r.owner)}"
-                    data-repo="${escapeHtml(r.repo)}"
-                    class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-destructive/20 text-muted-foreground hover:text-destructive-foreground"
-                  >✕</button>
-                </div>
-              </div>
-              ${commitsHtml}
+          <div class="repo-row row-hover" data-key="${escapeHtml(key)}">
+            <div class="rid">${ridStr}</div>
+            <div><span class="dot ${dotCls}" title="${icon}"></span></div>
+            <div class="name">
+              <span class="repo">${escapeHtml(key)}</span>
+              ${r.notes ? `<span class="notes">${escapeHtml(r.notes)}</span>` : ""}
             </div>
-          </article>`;
+            <div class="ahead">${ahead}</div>
+            <div class="meta">
+              ${errMsg || (branch + ref + refDate) || `<span class="text-faint">—</span>`}
+              ${r.lastChecked ? `<span class="sep text-faint">${escapeHtml(relTime(r.lastChecked))}</span>` : ""}
+            </div>
+            <div class="actions">
+              ${canExpand ? `<button class="icon-btn" data-action="toggle" title="${open ? "Collapse" : "Expand commits"}">${open ? "▾" : "▸"}</button>` : `<span class="icon-btn"></span>`}
+              <a class="icon-btn" href="${escapeHtml(r.url)}" target="_blank" rel="noopener" title="Open on GitHub">↗</a>
+              <button class="icon-btn" data-action="refresh" data-owner="${escapeHtml(r.owner)}" data-repo="${escapeHtml(r.repo)}" title="Refresh">↻</button>
+              <button class="icon-btn danger" data-action="delete" data-owner="${escapeHtml(r.owner)}" data-repo="${escapeHtml(r.repo)}" title="Remove">✕</button>
+            </div>
+            ${open && canExpand ? commitsHtml(r) : ""}
+          </div>
+        `;
       }
 
+      // ── Render ──────────────────────────────────────────────────
       function render() {
+        // Overview counts
         let pending = 0, clean = 0, noRelease = 0;
         for (const r of state.repos) {
           if (r.status === "behind") pending++;
           else if (r.status === "clean") clean++;
           else if (r.status === "no_release") noRelease++;
         }
-        document.getElementById("ovPending").textContent = pending;
-        document.getElementById("ovClean").textContent = clean;
-        document.getElementById("ovNoRelease").textContent = noRelease;
-        document.getElementById("ovTotal").textContent = state.repos.length;
+        const total = state.repos.length || 1;
+        $("#ovPending").textContent = pending;
+        $("#ovClean").textContent = clean;
+        $("#ovNoRelease").textContent = noRelease;
+        $("#ovTotal").textContent = state.repos.length;
+        $("#ovTotal2").textContent = state.repos.length;
+        $("#barPending").style.cssText = `background: var(--amber); width: ${(pending/total)*100}%`;
+        $("#barClean").style.cssText   = `background: var(--green); width: ${(clean/total)*100}%`;
+        $("#barNoRelease").style.cssText = `background: var(--blue); width: ${(noRelease/total)*100}%`;
+        $("#ovPendingSub").textContent =
+          pending === 0 ? "all shipped" : `${pending} of ${state.repos.length} behind release`;
+        $("#ovCleanSub").textContent = `${Math.round((clean/total)*100)}% caught up`;
 
+        // Filter
         let visible = state.repos;
-        if (state.filter !== "all") {
-          visible = visible.filter((r) => r.status === state.filter);
-        }
-        if (state.afterDate) {
-          visible = visible.filter((r) => repoHasCommitsAfter(r, state.afterDate));
-        }
+        if (state.filter !== "all") visible = visible.filter((r) => r.status === state.filter);
+        if (state.afterDate) visible = visible.filter((r) => repoHasCommitsAfter(r, state.afterDate));
 
         const order = { behind: 0, loading: 1, no_release: 2, clean: 3, error: 4, unknown: 5 };
         visible.sort((a, b) => (order[a.status] ?? 9) - (order[b.status] ?? 9));
 
-        // Date filter status banner
-        const dfs = document.getElementById("dateFilterStatus");
+        // Filter status text
+        const dl = $("#dateFilterLabel");
         if (state.afterDate) {
-          dfs.classList.remove("hidden");
-          document.getElementById("dateFilterLabel").textContent =
-            "after " + state.afterDate.toLocaleDateString();
-          document.getElementById("dateFilterCount").textContent =
-            `· ${visible.length} of ${state.repos.length} repos`;
-          document.getElementById("clearDate").classList.remove("hidden");
+          dl.textContent = "→ commits after " + fmtDateShort(state.afterDate);
+          $("#clearDate").style.display = "";
         } else {
-          dfs.classList.add("hidden");
-          document.getElementById("clearDate").classList.add("hidden");
+          dl.textContent = "";
+          $("#clearDate").style.display = "none";
         }
+        $("#filterCount").textContent = `${visible.length} of ${state.repos.length} shown`;
+        $("#visibleCount").textContent = visible.length;
 
-        safeSet(document.getElementById("repoList"), visible.map(repoCard).join(""));
+        // List
+        safeSet($("#repoList"), visible.map(repoRow).join(""));
+        $("#emptyState").style.display = state.repos.length === 0 ? "block" : "none";
 
-        document
-          .getElementById("emptyState")
-          .classList.toggle("hidden", state.repos.length > 0);
+        // Filter button active state
+        document.querySelectorAll("#filterSeg button").forEach((b) =>
+          b.classList.toggle("active", b.dataset.filter === state.filter)
+        );
 
-        document
-          .querySelectorAll(".filter-btn")
-          .forEach((b) => b.classList.toggle("active", b.dataset.filter === state.filter));
-
-        document.getElementById("lastSync").textContent =
-          "synced " + new Date().toLocaleTimeString();
+        // Last sync
+        const now = new Date();
+        const nowStr = `${String(now.getHours()).padStart(2,"0")}:${String(now.getMinutes()).padStart(2,"0")}:${String(now.getSeconds()).padStart(2,"0")}`;
+        $("#lastSync").textContent = "→ synced " + nowStr;
+        $("#ovLastSync").textContent = `synced ${nowStr}`;
       }
 
-      document.getElementById("repoList").addEventListener("click", async (e) => {
-        // stop propagation for action button cluster
-        const stop = e.target.closest('[data-action="stop"]');
+      // ── Events ──────────────────────────────────────────────────
+      $("#repoList").addEventListener("click", async (e) => {
         const t = e.target.closest("[data-action]");
-        if (!t) return;
+        if (!t) {
+          // click on row → toggle if expandable
+          const row = e.target.closest(".repo-row");
+          if (!row) return;
+          const key = row.dataset.key;
+          const r = state.repos.find((x) => x.owner + "/" + x.repo === key);
+          if (!r || r.status !== "behind" || !r.commits || !r.commits.length) return;
+          if (state.expanded.has(key)) state.expanded.delete(key);
+          else state.expanded.add(key);
+          render();
+          return;
+        }
         const action = t.dataset.action;
-        if (action === "stop") return;
         if (action === "toggle") {
-          if (stop && stop !== t) return;
-          const k = t.dataset.key;
-          if (state.expanded.has(k)) state.expanded.delete(k);
-          else state.expanded.add(k);
+          const row = t.closest(".repo-row");
+          const key = row.dataset.key;
+          if (state.expanded.has(key)) state.expanded.delete(key);
+          else state.expanded.add(key);
           render();
         } else if (action === "refresh") {
           const { owner, repo } = t.dataset;
           await api(`/api/repos/${owner}/${repo}/refresh`, { method: "POST" });
-          setTimeout(loadRepos, 400);
-          setTimeout(loadRepos, 1500);
-          setTimeout(loadRepos, 3500);
+          [400, 1500, 3500].forEach((d) => setTimeout(loadRepos, d));
         } else if (action === "delete") {
           const { owner, repo } = t.dataset;
           if (!confirm(`Remove ${owner}/${repo}?`)) return;
@@ -652,62 +714,13 @@
         }
       });
 
-      // Copy release announcement
-      function buildReleaseMarkdown() {
-        // Use the same visible+filter logic, but only repos with status "behind"
-        let visible = state.repos.filter((r) => r.status === "behind");
-        if (state.afterDate) {
-          visible = visible.filter((r) => repoHasCommitsAfter(r, state.afterDate));
-        }
-        // Sort by commitsAhead desc for visibility
-        visible.sort((a, b) => (b.commitsAhead || 0) - (a.commitsAhead || 0));
-
-        const dateForHeader = state.afterDate || new Date();
-        const header = `Dari changes dari ${fmtDateShort(dateForHeader)}, inilah service-service yang akan naik:`;
-
-        if (visible.length === 0) {
-          return `${header}\n- (tidak ada repo yang perlu di-release)\n\nConfirm apakah ada perubahan vault atau config lainnya. dan apakah dari list ini ada yang tidak perlu release?`;
-        }
-
-        const lines = visible.map(
-          (r) => `- [${r.owner}/${r.repo}](${r.url}) -> ${r.commitsAhead} commits`
-        );
-        return `${header}\n${lines.join("\n")}\n\nConfirm apakah ada perubahan vault atau config lainnya. dan apakah dari list ini ada yang tidak perlu release?`;
-      }
-
-      document.getElementById("copyReleaseBtn").addEventListener("click", async () => {
-        const md = buildReleaseMarkdown();
-        const label = document.getElementById("copyReleaseLabel");
-        try {
-          await navigator.clipboard.writeText(md);
-          label.textContent = "Copied!";
-        } catch (e) {
-          // Fallback for older browsers / non-secure contexts
-          const ta = document.createElement("textarea");
-          ta.value = md;
-          ta.style.position = "fixed";
-          ta.style.opacity = "0";
-          document.body.appendChild(ta);
-          ta.select();
-          try {
-            document.execCommand("copy");
-            label.textContent = "Copied!";
-          } catch (_) {
-            label.textContent = "Copy failed";
-          }
-          ta.remove();
-        }
-        setTimeout(() => (label.textContent = "Copy"), 1800);
-      });
-
-      document.getElementById("refreshAllBtn").addEventListener("click", async () => {
+      $("#refreshAllBtn").addEventListener("click", async () => {
         await api("/api/repos/refresh-all", { method: "POST" });
-        setTimeout(loadRepos, 600);
-        setTimeout(loadRepos, 2000);
-        setTimeout(loadRepos, 5000);
+        [600, 2000, 5000].forEach((d) => setTimeout(loadRepos, d));
       });
 
-      document.querySelectorAll(".filter-btn").forEach((b) => {
+      // Filter status segment
+      document.querySelectorAll("#filterSeg button").forEach((b) => {
         b.addEventListener("click", () => {
           state.filter = b.dataset.filter;
           render();
@@ -715,78 +728,98 @@
       });
 
       // Date filter
-      const dateInput = document.getElementById("afterDate");
+      const dateInput = $("#afterDate");
       dateInput.addEventListener("change", (e) => {
         state.afterDate = parseDateInput(e.target.value);
         render();
       });
-      document.getElementById("presetWeek").addEventListener("click", () => {
+      $("#presetWeek").addEventListener("click", () => {
         const mon = lastMonday();
         dateInput.value = fmtDateInput(mon);
         state.afterDate = mon;
         render();
       });
-      document.getElementById("clearDate").addEventListener("click", () => {
+      $("#clearDate").addEventListener("click", () => {
         dateInput.value = "";
         state.afterDate = null;
         render();
       });
 
-      const modal = document.getElementById("addModal");
-      function openModal() {
-        modal.classList.remove("hidden");
-        document.getElementById("addOwner").focus();
-      }
-      function closeModal() {
-        modal.classList.add("hidden");
-        document.getElementById("addForm").reset();
-        document.getElementById("addError").classList.add("hidden");
-      }
-      document.getElementById("addRepoBtn").addEventListener("click", openModal);
-      document.getElementById("cancelAdd").addEventListener("click", closeModal);
-      modal.addEventListener("click", (e) => {
-        if (e.target === modal) closeModal();
-      });
+      // Copy markdown
+      function buildReleaseMarkdown() {
+        let visible = state.repos.filter((r) => r.status === "behind");
+        if (state.afterDate) visible = visible.filter((r) => repoHasCommitsAfter(r, state.afterDate));
+        visible.sort((a, b) => (b.commitsAhead || 0) - (a.commitsAhead || 0));
 
-      document.getElementById("addUrl").addEventListener("input", (e) => {
-        const m = e.target.value.match(
-          /github\.com[\/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:\/|$)/
-        );
-        if (m) {
-          document.getElementById("addOwner").value = m[1];
-          document.getElementById("addRepo").value = m[2];
+        const dateForHeader = state.afterDate || new Date();
+        const header = `Dari changes dari ${fmtDateShort(dateForHeader)}, inilah service-service yang akan naik:`;
+        if (visible.length === 0) {
+          return `${header}\n- (tidak ada repo yang perlu di-release)\n\nConfirm apakah ada perubahan vault atau config lainnya. dan apakah dari list ini ada yang tidak perlu release?`;
         }
+        const lines = visible.map(
+          (r) => `- [${r.owner}/${r.repo}](${r.url}) -> ${r.commitsAhead} commits`
+        );
+        return `${header}\n${lines.join("\n")}\n\nConfirm apakah ada perubahan vault atau config lainnya. dan apakah dari list ini ada yang tidak perlu release?`;
+      }
+      $("#copyReleaseBtn").addEventListener("click", async () => {
+        const md = buildReleaseMarkdown();
+        const label = $("#copyReleaseLabel");
+        try {
+          await navigator.clipboard.writeText(md);
+          label.textContent = "COPIED!";
+        } catch (e) {
+          const ta = document.createElement("textarea");
+          ta.value = md; ta.style.position = "fixed"; ta.style.opacity = "0";
+          document.body.appendChild(ta); ta.select();
+          try { document.execCommand("copy"); label.textContent = "COPIED!"; }
+          catch (_) { label.textContent = "FAILED"; }
+          ta.remove();
+        }
+        setTimeout(() => (label.textContent = "COPY"), 1800);
       });
 
-      document.getElementById("addForm").addEventListener("submit", async (e) => {
+      // Modal
+      const modal = $("#addModal");
+      const openModal = () => { modal.classList.add("open"); $("#addOwner").focus(); };
+      const closeModal = () => {
+        modal.classList.remove("open");
+        $("#addForm").reset();
+        $("#addError").classList.remove("show");
+      };
+      $("#addRepoBtn").addEventListener("click", openModal);
+      $("#cancelAdd").addEventListener("click", closeModal);
+      modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+      $("#addUrl").addEventListener("input", (e) => {
+        const m = e.target.value.match(/github\.com[\/:]([\w.-]+)\/([\w.-]+?)(?:\.git)?(?:\/|$)/);
+        if (m) { $("#addOwner").value = m[1]; $("#addRepo").value = m[2]; }
+      });
+      $("#addForm").addEventListener("submit", async (e) => {
         e.preventDefault();
-        const owner = document.getElementById("addOwner").value.trim();
-        const repo = document.getElementById("addRepo").value.trim();
-        const notes = document.getElementById("addNotes").value.trim();
-        const errEl = document.getElementById("addError");
-        errEl.classList.add("hidden");
+        const owner = $("#addOwner").value.trim();
+        const repo = $("#addRepo").value.trim();
+        const notes = $("#addNotes").value.trim();
+        const errEl = $("#addError");
+        errEl.classList.remove("show");
         try {
-          await api("/api/repos", {
-            method: "POST",
-            body: JSON.stringify({ owner, repo, notes }),
-          });
+          await api("/api/repos", { method: "POST", body: JSON.stringify({ owner, repo, notes }) });
           closeModal();
           loadRepos();
-          setTimeout(loadRepos, 1500);
-          setTimeout(loadRepos, 4000);
+          [1500, 4000].forEach((d) => setTimeout(loadRepos, d));
         } catch (err) {
           errEl.textContent = err.message || "Failed to add repo";
-          errEl.classList.remove("hidden");
+          errEl.classList.add("show");
         }
       });
 
+      // Keyboard shortcuts
       document.addEventListener("keydown", (e) => {
         if (e.target.tagName === "INPUT") return;
-        if (e.key === "r") document.getElementById("refreshAllBtn").click();
+        if (e.key === "r") $("#refreshAllBtn").click();
         else if (e.key === "a") openModal();
-        else if (e.key === "Escape" && !modal.classList.contains("hidden")) closeModal();
+        else if (e.key === "Escape" && modal.classList.contains("open")) closeModal();
       });
 
+      // Bootstrap
       loadMeta();
       loadRepos();
       setInterval(loadRepos, 5000);
